@@ -1,0 +1,13 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+
+# Don't share results/data/etc
+data
+results
+*.png
+*.csv
+*.xlsx
+*.pdf
+_targets
