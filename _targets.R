@@ -30,7 +30,7 @@ list(
   tar_target(date_forecasting, ymd("2022-05-09")),
   
   # The output name of the forecast, used for labeling output files
-  tar_target(forecast_name, str_c("fc_", date_forecasting, "_code_test")),
+  tar_target(forecast_name, str_c("fc_", date_forecasting, "_code_test_2")),
   
   tar_target(perform_fitting, FALSE),
   
@@ -62,7 +62,7 @@ list(
     clinical_parameters, 
     {
       read_csv(
-        "/home/forecast/source/los_analysis_competing_risks/results/NSW_2022-05-03_omi_primary/clinical_parameters_share.csv",
+        "example_los//NSW_2022-05-03_omi_primary/clinical_parameters_share.csv",
         show_col_types = FALSE
       ) %>%
         # Can't produce onset-to-ward estimates from the NSW data as-is, so use Delta estimates (via JWalk, somehow) (7/02/2022)
@@ -77,7 +77,7 @@ list(
   tar_target(
     clinical_parameter_samples, {
       read_csv(
-        "../los_analysis_competing_risks/results/NSW_2022-05-03_omi_primary/estimate_samples_share_wide.csv"
+        "example_los//NSW_2022-05-03_omi_primary/estimate_samples_share_wide.csv"
       ) %>%
         mutate(scale_onset_to_ward = (c(3.41, 3.41, 3.41, 3.41, 3.41,
                                        3.35, 3.35, 3.24, 3.24) * 0.7) %>% rep(times = 1000),

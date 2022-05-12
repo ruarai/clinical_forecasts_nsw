@@ -1,0 +1,10 @@
+name,value
+n_raw_records,9580
+n_raw_ind,7776
+n_single_episode_ind,6931
+n_mult_episode_ind,845
+n_invalid_multi_episode_ind,471
+n_after_multi_episode_filt_ind,7305
+n_adm_delay_ind,1612
+n_bad_duration_ind,0
+final_n_ind,5693

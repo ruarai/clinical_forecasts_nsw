@@ -7,7 +7,7 @@
 data
 results
 *.png
-*.csv
+#*.csv
 *.xlsx
 *.pdf
 _targets
