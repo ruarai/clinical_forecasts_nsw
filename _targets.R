@@ -22,13 +22,14 @@ source("R/plot_results_by_age.R")
 source("R/export_quants.R")
 
 source("R/read_hospital_data.R")
+source("R/get_public_occupancy.R")
 
 list(
   
   # The date the forecast is run, currently only used for naming the output
   tar_target(date_forecasting, ymd("2022-05-09")),
   
-  # The output name of the forecast, used for labelling output files
+  # The output name of the forecast, used for labeling output files
   tar_target(forecast_name, str_c("fc_", date_forecasting, "_code_test")),
   
   tar_target(perform_fitting, FALSE),
@@ -66,9 +67,9 @@ list(
       ) %>%
         # Can't produce onset-to-ward estimates from the NSW data as-is, so use Delta estimates (via JWalk, somehow) (7/02/2022)
         mutate(scale_onset_to_ward = c(3.41, 3.41, 3.41, 3.41, 3.41,
-                                       3.35, 3.35, 3.24, 3.24),
+                                       3.35, 3.35, 3.24, 3.24) * 0.7,
                shape_onset_to_ward = c(1.7, 1.7, 1.7, 1.7, 1.7,
-                                       1.7, 1.9, 1.9, 1.3))
+                                       1.7, 1.9, 1.9, 1.3) * 0.7)
     }
   ),
   
@@ -78,10 +79,10 @@ list(
       read_csv(
         "../los_analysis_competing_risks/results/NSW_2022-05-03_omi_primary/estimate_samples_share_wide.csv"
       ) %>%
-        mutate(scale_onset_to_ward = c(3.41, 3.41, 3.41, 3.41, 3.41,
-                                       3.35, 3.35, 3.24, 3.24) %>% rep(times = 1000),
-               shape_onset_to_ward = c(1.7, 1.7, 1.7, 1.7, 1.7,
-                                       1.7, 1.9, 1.9, 1.3) %>% rep(times = 1000))
+        mutate(scale_onset_to_ward = (c(3.41, 3.41, 3.41, 3.41, 3.41,
+                                       3.35, 3.35, 3.24, 3.24) * 0.7) %>% rep(times = 1000),
+               shape_onset_to_ward = (c(1.7, 1.7, 1.7, 1.7, 1.7,
+                                       1.7, 1.9, 1.9, 1.3) * 0.7) %>% rep(times = 1000))
       
     }
   ),
@@ -122,6 +123,8 @@ list(
     )
   ),
   
+  tar_target(public_occupancy_data, get_public_occupancy(date_forecasting, forecast_dates)),
+  
   # Produce a joint case trajectory combining backcast and forecast
   tar_target(
     case_trajectory,
@@ -144,13 +147,20 @@ list(
   tar_target(
     sim_results,
     
-    run_progression_model(time_varying_estimates, case_trajectory, clinical_parameter_samples, forecast_dates, do_ABC = perform_fitting)
+    run_progression_model(
+      time_varying_estimates,
+      case_trajectory,
+      clinical_parameter_samples,
+      public_occupancy_data,
+      forecast_dates,
+      do_ABC = perform_fitting
+    )
   ),
   
   # Produce the singular plot of ward and ICU occupancy
   tar_target(
     main_results_plots,
-    plot_main_results(sim_results, forecast_dates, plot_dir, forecast_name)
+    plot_main_results(sim_results, public_occupancy_data, forecast_dates, plot_dir, forecast_name)
   ),
   
   # Produce additional plots of occupancy and transitions by age

@@ -1,7 +1,7 @@
 
 
 plot_main_results <- function(
-  sim_results,
+  sim_results, public_occupancy_data,
   forecast_dates,
   
   plot_dir, forecast_name
@@ -9,28 +9,13 @@ plot_main_results <- function(
   results_count_quants <- sim_results$results_count_quants
   
   
-  true_occupancy_curve <- read_csv("https://github.com/M3IT/COVID-19_Data/raw/master/Data/COVID_AU_state.csv",
-                                   show_col_types = FALSE) %>%
-    select(-state) %>%
-    rename(state = state_abbrev) %>%
-    
-    mutate(ward_cum = hosp_cum - icu_cum) %>%
-    select(state, date, ward = ward_cum, ICU = icu_cum) %>%
-    
-    pivot_longer(cols = -c(state, date),
-                 values_to = "count", names_to = "group") %>%
-    
-    filter(state == "NSW") %>%
-    
-    filter(date >= forecast_dates$simulation_start)
-  
   p_ward <- ggplot(results_count_quants %>%
                      filter(group == "ward")) +
     geom_ribbon(aes(x = date, ymin = lower, ymax = upper, group = quant),
                 fill = 'purple', alpha = 0.2) +
     
     geom_line(aes(x = date, y = count),
-              true_occupancy_curve %>%
+              public_occupancy_data %>%
                 filter(group == "ward")) +
     
     geom_vline(aes(xintercept = forecast_dates$forecast_start), linetype = 'dashed') +
@@ -55,7 +40,7 @@ plot_main_results <- function(
                 fill = 'green4', alpha = 0.2) +
     
     geom_line(aes(x = date, y = count),
-              true_occupancy_curve %>%
+              public_occupancy_data %>%
                 filter(group == "ICU")) +
     
     geom_vline(aes(xintercept = forecast_dates$forecast_start), linetype = 'dashed') +

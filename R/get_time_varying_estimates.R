@@ -187,16 +187,7 @@ get_time_varying_estimates <- function(
     sum(n_hosp) / x - sum(n_not_hosp * (prob_already_observed / (1 - x * prob_already_observed)))
   }
   
-
-  clinical_parameters <- clinical_parameters %>%
-    mutate(shape_onset_to_ward = shape_onset_to_ward * 0.7,
-           scale_onset_to_ward = scale_onset_to_ward * 0.7)
-  
   clinical_parameter_lookup <- clinical_parameters %>%
-    
-    
-    mutate(scale_onset_to_ward = scale_onset_to_ward,
-           shape_onset_to_ward = shape_onset_to_ward) %>%
     
     select(-age_group) %>%
     as.matrix() %>%

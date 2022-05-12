@@ -3,11 +3,14 @@ run_progression_model <- function(
   case_trajectory,
   clinical_parameter_samples,
   
+  public_occupancy_data,
+  
   forecast_dates,
   
   do_ABC = FALSE
 ) {
   
+  # Transform a variable from the time-varying estimates into a matrix that can be read by the model
   estimates_to_matrix <- function(x, variable) {
     col <- deparse(substitute(variable))
     
@@ -27,40 +30,34 @@ run_progression_model <- function(
     ungroup() %>%
     estimates_to_matrix(pr_age_given_case)
   
-  
   mat_pr_hosp <- time_varying_estimates %>%
     estimates_to_matrix(pr_hosp)
   
   mat_pr_ICU <- time_varying_estimates %>%
     estimates_to_matrix(pr_ICU)
   
+  
+  # Transform the case trajectory into a single-column matrix for the model
+  # If multiple trajectory need to be provided, this will need updating
   case_matrix <- case_trajectory %>%
     arrange(date_onset) %>%
     pull(count) %>%
     as.matrix()
   
   n_days <- nrow(case_matrix)
-
-  clinical_parameter_samples <- clinical_parameter_samples %>%
-    mutate(shape_onset_to_ward = shape_onset_to_ward * 0.7,
-           scale_onset_to_ward = scale_onset_to_ward * 0.7)
   
-  
+  # Produce two vectors (for ward and ICU) of known occupancy to be fit to
   occupancy_curve_match <- tibble(
     date = seq(forecast_dates$simulation_start, forecast_dates$forecast_horizon, by = 'days')
   ) %>%
     mutate(do_match = date >= forecast_dates$forecast_start - ddays(7) & date <= forecast_dates$forecast_start) %>%
     
     left_join(
-      
-      tar_read(known_occupancy_ts_NSW, store = "../clinical_forecasting/_targets") %>%
-        filter(source == "c19", state == "NSW") %>%
-        
-        filter(date >= forecast_dates$simulation_start) %>%
+      public_occupancy_data %>%
         select(date, group, count) %>%
-        pivot_wider(names_from = group, values_from = count)
+        pivot_wider(names_from = group, values_from = count),
       
-    ) %>%
+      by = "date") %>%
     
     mutate(ward = zoo::rollmean(ward, 7, align = "r", fill = NA),
            ICU = zoo::rollmean(ICU, 7, align = "r", fill = NA),
@@ -70,11 +67,16 @@ run_progression_model <- function(
            ward_vec = replace_na(ward_vec, -1),
            ICU_vec = replace_na(ICU_vec, -1))
   
+  # Define our priors for length-of-stay and pr_hosp adjustment
   prior_sigma_los <- if_else(do_ABC, 0.8, 0)
   prior_sigma_hosp <- if_else(do_ABC, 0.8, 0)
   
-  a <- Sys.time()
+  # Define our thresholds for the adaptive ABC fitting
   thresholds <- c(0.1, 0.2, 0.3, 0.4, 0.5, 10)
+  
+  
+  # Perform the actual simulation and fitting
+  a <- Sys.time()
   results <- curvemush::mush_abc(
     n_samples = 4000,
     n_delay_samples = 512,
@@ -104,8 +106,10 @@ run_progression_model <- function(
   )
   
   b <- Sys.time()
-  print(b - a)
+  print(str_c("Simulation ran in ", round(b - a, 2), " ", units(b - a)))
   
+  
+  # Do a bunch of work to re-format the simulation output into a nicer form
   
   source("../clinical_forecasting/R/progression_model.R")
   group_labels <- c("symptomatic_clinical", "ward", "ICU", "discharged", "died")
@@ -219,5 +223,37 @@ run_progression_model <- function(
     ABC_parameters = ABC_parameters
   )
 
+}
+
+
+make_results_quants <- function(tbl, probs = c(0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9)) {
+  data_matrix <- tbl %>%
+    select(starts_with("sim_")) %>%
+    as.matrix()
+  
+  id_tbl <- tbl %>%
+    select(!starts_with("sim_"))
+  
+  medians <- data_matrix %>%
+    matrixStats::rowMedians() %>%
+    tibble(median = .)
+  
+  quant_probs <- c(rev(1 - probs) / 2, 0.5 + probs / 2)
+  quant_names <- c(str_c("lower_", rev(probs) * 100), str_c("upper_", probs * 100))
+  
+  quants <- data_matrix %>%
+    matrixStats::rowQuantiles(probs = quant_probs) %>%
+    `colnames<-`(quant_names) %>%
+    as_tibble() %>%
+    bind_cols(id_tbl, .) %>%
+    pivot_longer(cols = -all_of(colnames(id_tbl)),
+                 names_to = c("type", "quant"),
+                 names_sep = "_") %>%
+    pivot_wider(names_from = "type",
+                values_from = "value") %>%
+    
+    mutate(quant = factor(quant, levels = as.character(probs * 100)) %>% fct_rev())
+  
+  quants
 }
 
