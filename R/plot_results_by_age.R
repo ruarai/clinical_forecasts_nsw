@@ -10,7 +10,7 @@ plot_results_by_age <- function(
   plot_dir
 ) {
   
-  source("../clinical_forecasting/R/age_groups.R")
+  source("R/age_groups.R")
   
   
   p_common <- list(

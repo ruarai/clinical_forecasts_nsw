@@ -6,9 +6,7 @@ get_time_varying_estimates <- function(
   clinical_parameters,
   forecast_dates
 ) {
-  
-  source("../clinical_forecasting/R/state_data/NSW.R")
-  source("../clinical_forecasting/R/age_groups.R")
+  source("R/age_groups.R")
   
   date_cutoff <- min(forecast_dates$case_data, forecast_dates$hospital_data) - ddays(3)
   
@@ -244,9 +242,6 @@ get_time_varying_estimates <- function(
   )
   
   
-  source("../clinical_forecasting/R/time_varying_morbidity_estimations.R")
-  
-  
   
   F_ICU_lookup <- get_ICU_lookup(age_groups, clinical_parameter_lookup)
   
@@ -392,5 +387,76 @@ get_time_varying_estimates <- function(
   
   
 }
+
+
+
+
+
+get_ICU_lookup <- function(age_groups, clinical_parameter_lookup) {
+  
+  tbl_vars <- expand_grid(
+    x = seq(0, 30, by = 0.1),
+    age_group = age_groups
+  )
+  
+  
+  F_icu_given_case_exact <- function(x, 
+                                     delay_hosp_shape, delay_hosp_scale,
+                                     delay_ICU_shape, delay_ICU_scale) {
+    
+    numer <- integrate(function(y){
+      pgamma(x - y,
+             shape = delay_ICU_shape,
+             scale = delay_ICU_scale) *
+        dgamma(y,
+               shape = delay_hosp_shape,
+               scale = delay_hosp_scale)
+    },
+    
+    0 + .Machine$double.eps, x)$value
+    
+    denom <- pgamma(x,
+                    shape = delay_hosp_shape,
+                    scale = delay_hosp_scale)
+    
+    return(numer / denom)
+  }
+  
+  y_vals <- pmap_dbl(tbl_vars, function(x, age_group) {
+    
+    
+    F_icu_given_case_exact(
+      x, 
+      delay_hosp_shape = clinical_parameter_lookup[age_group, "shape_onset_to_ward"],
+      delay_hosp_scale = clinical_parameter_lookup[age_group, "scale_onset_to_ward"],
+      
+      delay_ICU_shape = clinical_parameter_lookup[age_group,  "shape_ward_to_ICU"],
+      delay_ICU_scale = clinical_parameter_lookup[age_group, "scale_ward_to_ICU"]
+    )
+  })
+  
+  
+  tbl_output <- tbl_vars %>%
+    mutate(y = y_vals,
+           
+           y = if_else(is.nan(y), 0, y))
+  
+  
+  tbl_output %>%
+    pivot_wider(names_from = age_group,
+                values_from = y) %>%
+    select(-x) %>%
+    as.matrix()
+  
+}
+
+
+
+
+
+
+
+
+
 
 

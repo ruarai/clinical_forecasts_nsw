@@ -52,7 +52,7 @@ list(
     plot_dir,
     {
       dir <- str_c("results/", forecast_name, "/")
-      dir.create(dir, showWarnings = FALSE)
+      dir.create(dir, recursive = TRUE, showWarnings = FALSE)
       return(dir)
     }
   ),

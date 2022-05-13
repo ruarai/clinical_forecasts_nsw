@@ -111,7 +111,6 @@ run_progression_model <- function(
   
   # Do a bunch of work to re-format the simulation output into a nicer form
   
-  source("../clinical_forecasting/R/progression_model.R")
   group_labels <- c("symptomatic_clinical", "ward", "ICU", "discharged", "died")
   compartment_labels <- c(
     "symptomatic_clinical", "ward", "discharged_ward", "died_ward", "ICU",
