@@ -78,46 +78,35 @@ plot_results_by_age <- function(
     p_common
   
   ggsave(paste0(plot_dir, "/ages_discharge.png"), width = 8, height = 6, bg = "white")
-  # 
-  # 
-  # did_patient_die <- function(discharge_description) {
-  #   death_descriptors <- c("deceased", "death", "died", "dead")
-  #   regex_match <- str_c("(?i)(", str_c(death_descriptors, collapse = "|"), ")")
-  #   
-  #   str_detect(discharge_description, regex_match)
-  # }
-  # 
-  # linelist_died <- linelist_raw_NSW %>%
-  #   mutate(died = did_patient_die(AP_DISCHARGE_DISPOSITION_DESC)) %>%
-  #   filter(died)
-  # 
-  # count_died <- linelist_died %>%
-  #   count(age_group, date = as_date(discharge_date)) %>%
-  #   
-  #   group_by(age_group) %>%
-  #   mutate(n = zoo::rollmean(n, 7, fill = NA))
-  # 
-  # 
-  # ggplot(results_aged_transitions_quants %>%
-  #          filter(group == "died")) +
-  #   
-  #   stat_count(geom = "point", aes(x = as_date(discharge_date)), size = 0.8,
-  #              linelist_died) +
-  #   
-  #   geom_line(aes(x = date, y = n), count_died) +
-  #   
-  #   geom_ribbon(aes(x = date, ymin = lower, ymax = upper, group = quant),
-  #               alpha = 0.2, fill = ggokabeito::palette_okabe_ito(5)) +
-  #   
-  #   facet_wrap(~age_group, scales = "free_y") +
-  #   xlab(NULL) + ylab(NULL) +
-  #   
-  #   ggtitle("Daily deaths") +
-  #   
-  #   p_common
-  # 
-  # ggsave(paste0(plot_dir, "/ages_death.png"), width = 8, height = 6, bg = "white")
-  
+
+  count_died <- hospital_data_unfiltered %>%
+    filter(patient_died) %>%
+    count(age_group, date = as_date(dt_hosp_discharge)) %>%
+
+    group_by(age_group) %>%
+    mutate(n = zoo::rollmean(n, 7, fill = NA))
+
+
+  ggplot(results_aged_transitions_quants %>%
+           filter(group == "died")) +
+
+    stat_count(geom = "point", aes(x = as_date(dt_hosp_discharge)), size = 0.8,
+               hospital_data_unfiltered %>% filter(patient_died)) +
+
+    geom_line(aes(x = date, y = n), count_died) +
+
+    geom_ribbon(aes(x = date, ymin = lower, ymax = upper, group = quant),
+                alpha = 0.2, fill = ggokabeito::palette_okabe_ito(5)) +
+
+    facet_wrap(~age_group, scales = "free_y") +
+    xlab(NULL) + ylab(NULL) +
+
+    ggtitle("Daily deaths") +
+
+    p_common
+
+  ggsave(paste0(plot_dir, "/ages_death.png"), width = 8, height = 6, bg = "white")
+
   
   ggplot(results_aged_transitions_quants %>%
            filter(group == "ICU")) +

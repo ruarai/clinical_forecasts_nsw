@@ -8,8 +8,11 @@ get_time_varying_estimates <- function(
 ) {
   source("R/age_groups.R")
   
+  
+  # When to assume data may be affected by right truncation (~3 days prior to earliest load date)
   date_cutoff <- min(forecast_dates$case_data, forecast_dates$hospital_data) - ddays(3)
   
+  # Clean up and count the NSW data
   nsw_cases_count <- nsw_cases %>%
     mutate(date_onset = EARLIEST_CONFIRMED_OR_PROBABLE - ddays(2),
            age_group = assign_10yr_age_group(AGE_AT_EVENT_YEARS)) %>%
@@ -17,7 +20,7 @@ get_time_varying_estimates <- function(
            date_onset < date_cutoff) %>%
     count(date_onset, age_group)
   
-  
+  # Clean up and count the hospital data also
   hospital_admissions_count <- hospital_data_unfiltered %>%
     
     count(date_onset, age_group, ever_in_ICU = ever_in_icu) %>%
@@ -33,7 +36,7 @@ get_time_varying_estimates <- function(
     rename(ICU_count = hospitalised_and_ICU)
   
   
-  
+  # Join the two counts
   joint_count <- hospital_admissions_count %>%
     full_join(nsw_cases_count %>% rename(case_count = n),
               by = c("date_onset", "age_group")) %>%
@@ -43,6 +46,7 @@ get_time_varying_estimates <- function(
            case_count = if_else(is.na(case_count), hospitalised_count, case_count),
            case_count = if_else(hospitalised_count > case_count, hospitalised_count, case_count)) 
   
+  # Expand the counts out into a linelist (again) so that we can do bootstrapping
   cases_expanded <- pmap_dfr(
     joint_count,
     function(date_onset, age_group, case_count, hospitalised_count, ICU_count) {
@@ -70,21 +74,24 @@ get_time_varying_estimates <- function(
     }
   )
   
-  
-  
+
+  # When are our estimations being performed?
   estimation_period <- c(forecast_dates$simulation_start, date_cutoff)
   estimation_period_days <- seq(estimation_period[1], estimation_period[2], by = 'days')
   
+  # How many bootstraps to perform for each estimate?
   n_bootstraps <- 50
   
+  # How wide is our running average? 1 week seems to work okay with current case numbers
   window_width <- 7
   
+  # Define the vector of difference estimation windows
   window_starts <- 1:(length(estimation_period_days) - window_width)
   window_ends <- window_starts + window_width
   
   source("R/age_groups.R")
   
-  
+  # Produce n_bootstraps bootstraps of the case data
   age_tables <- map(
     1:n_bootstraps,
     function(i_bootstrap) {
@@ -110,6 +117,7 @@ get_time_varying_estimates <- function(
     }
   )
   
+  # Produce simple estimates of the multinomial distribution of case ages
   age_results <- map(
     age_tables,
     function(i_bootstraped_age_table) {
@@ -141,6 +149,7 @@ get_time_varying_estimates <- function(
     }
   )
   
+  # As above, produce bootstraps of the number of individuals hospitalised
   hosp_tables <- map(
     1:n_bootstraps,
     function(i_bootstrap) {
@@ -192,7 +201,7 @@ get_time_varying_estimates <- function(
     `rownames<-`(clinical_parameters$age_group)
   
   
-  
+  # MLE estimation of right-truncation adjusted probability of hospiutalisation across the bootstrapped datasets
   hosp_results <- map(
     hosp_tables,
     function(i_bootstrapped_hosp_table) {
@@ -242,7 +251,9 @@ get_time_varying_estimates <- function(
   )
   
   
+  # Repeating the above for ICU probabilities
   
+  # Make a lookup table for total ICU delays to speed this up
   F_ICU_lookup <- get_ICU_lookup(age_groups, clinical_parameter_lookup)
   
   F_icu_given_case <- function(x, age_group) {
@@ -342,6 +353,9 @@ get_time_varying_estimates <- function(
   )
   
   
+  # Join everything together into a dataframe
+  # This is messy but faster than map_dfr
+  
   all_results_ls <- vector(mode = "list", length = n_bootstraps * length(age_groups))
   
   
@@ -369,7 +383,9 @@ get_time_varying_estimates <- function(
     mutate(date = window_start + window_width / 2) %>%
     select(-window_start)
   
-  morbidity_trajectories <- all_results %>%
+  
+  # Cleanup and return
+  all_results %>%
     mutate(date = floor_date(date, "days")) %>%
     
     complete(
@@ -384,8 +400,6 @@ get_time_varying_estimates <- function(
     
     fill(pr_age_given_case, pr_hosp, pr_ICU, .direction = "updown") %>%
     ungroup()
-  
-  
 }
 
 
