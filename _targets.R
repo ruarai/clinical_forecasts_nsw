@@ -27,21 +27,21 @@ source("R/get_public_occupancy.R")
 list(
   
   # The date the forecast is run, currently only used for naming the output
-  tar_target(date_forecasting, ymd("2022-05-09")),
+  tar_target(date_forecasting, ymd("2022-06-07")),
   
   # The output name of the forecast, used for labeling output files
-  tar_target(forecast_name, str_c("fc_", date_forecasting, "_code_test_2")),
+  tar_target(forecast_name, str_c("fc_", date_forecasting, "_Ba_final")),
   
-  tar_target(perform_fitting, FALSE),
+  tar_target(perform_fitting, TRUE),
   
   # Input files for the forecast. Case forecast is via James Wood, cases_path is for NCIMS, hospital_data_path is for APDC
-  tar_target(case_forecast_curve_file, "~/random_data/JWood/Projections_20220509.csv"),
-  tar_target(cases_path, "../email_digester/downloads/20220509 - Case list - Freya Shearer.zip"),
-  tar_target(hospital_data_path, "../email_digester/downloads/NSW_out_episode_2022_05_10.xlsx"),
+  tar_target(case_forecast_curve_file, "~/random_data/JWood/Projections_BA4_20220607.csv"),
+  tar_target(cases_path, "../email_digester/downloads/20220606 - Case list - Freya Shearer.zip"),
+  tar_target(hospital_data_path, "../email_digester/downloads/NSW_out_episode_2022_06_07.xlsx"),
   
   # Path to data for ward and ICU occupancy by age, used for diagnostic plots
-  tar_target(occupancy_by_age_ward_path, "~/data_private/NSW_occupancy/Ward_2022-04-26_UNSW.csv"),
-  tar_target(occupancy_by_age_ICU_path, "~/data_private/NSW_occupancy/ICU_2022-04-26_UNSW.csv"),
+  tar_target(occupancy_by_age_ward_path, "~/data_private/NSW_occupancy/Ward_2022-05-23_UNSW.csv"),
+  tar_target(occupancy_by_age_ICU_path, "~/data_private/NSW_occupancy/ICU_2022-05-23_UNSW.csv"),
   
   
   # How far into the past does the backcast begin
@@ -62,7 +62,7 @@ list(
     clinical_parameters, 
     {
       read_csv(
-        "example_los//NSW_2022-05-03_omi_primary/clinical_parameters_share.csv",
+        "../los_analysis_competing_risks/results/NSW_2022-05-03_omi_primary/clinical_parameters_share.csv",
         show_col_types = FALSE
       ) %>%
         # Can't produce onset-to-ward estimates from the NSW data as-is, so use Delta estimates (via JWalk, somehow) (7/02/2022)
@@ -77,7 +77,7 @@ list(
   tar_target(
     clinical_parameter_samples, {
       read_csv(
-        "example_los//NSW_2022-05-03_omi_primary/estimate_samples_share_wide.csv"
+        "../los_analysis_competing_risks/results/NSW_2022-05-03_omi_primary/estimate_samples_share_wide.csv"
       ) %>%
         mutate(scale_onset_to_ward = (c(3.41, 3.41, 3.41, 3.41, 3.41,
                                        3.35, 3.35, 3.24, 3.24) * 0.7) %>% rep(times = 1000),
@@ -91,8 +91,8 @@ list(
   tar_target(
     case_forecast,
     read_csv(case_forecast_curve_file) %>%
-      mutate(date_onset = ymd(Date) - ddays(1), # Assume onset date is ~1 day before reporting, maybe worth revisiting
-             n = Cases) %>% 
+      mutate(date_onset = dmy(Date) - ddays(1), # Assume onset date is ~1 day before reporting, maybe worth revisiting
+             n = CasesBa) %>% 
       drop_na(n) %>%
       select(date_onset, n)
   ), 
