@@ -19,25 +19,34 @@ source("R/progression_model.R")
 source("R/plot_main_results.R")
 source("R/plot_results_by_age.R")
 
-source("R/export_quants.R")
+source("R/export_results.R")
 
 source("R/read_hospital_data.R")
 source("R/get_public_occupancy.R")
 
+
+source("../immune_effect/R/get_neuts_change.R")
+source("R/adjust_time_varying_estimates.R")
+
+source("../clinical_forecasting/R/nindss.R")
+source("../clinical_forecasting/R/time_varying_morbidity_estimations.R")
+
 list(
   
   # The date the forecast is run, currently only used for naming the output
-  tar_target(date_forecasting, ymd("2022-06-07")),
+  tar_target(date_forecasting, ymd("2022-06-20")),
   
   # The output name of the forecast, used for labeling output files
-  tar_target(forecast_name, str_c("fc_", date_forecasting, "_Ba_final")),
+  tar_target(forecast_name, str_c("fc_", date_forecasting, "_3_BA45_mix_fit")),
   
   tar_target(perform_fitting, TRUE),
   
   # Input files for the forecast. Case forecast is via James Wood, cases_path is for NCIMS, hospital_data_path is for APDC
-  tar_target(case_forecast_curve_file, "~/random_data/JWood/Projections_BA4_20220607.csv"),
-  tar_target(cases_path, "../email_digester/downloads/20220606 - Case list - Freya Shearer.zip"),
-  tar_target(hospital_data_path, "../email_digester/downloads/NSW_out_episode_2022_06_07.xlsx"),
+  tar_target(case_forecast_curve_file, "~/random_data/JWood/Projections_20220620_BA.csv"),
+  tar_target(cases_path, "../email_digester/downloads/case_linelist/20220620 - Case list - Freya Shearer.zip"),
+  tar_target(hospital_data_path, "../email_digester/downloads/hospital_linelist/NSW_out_episode_2022_06_22.xlsx"),
+  
+  #tar_target(nindss_path, "data/COVID-19 UoM 21Jun2022.csv"),
   
   # Path to data for ward and ICU occupancy by age, used for diagnostic plots
   tar_target(occupancy_by_age_ward_path, "~/data_private/NSW_occupancy/Ward_2022-05-23_UNSW.csv"),
@@ -91,8 +100,8 @@ list(
   tar_target(
     case_forecast,
     read_csv(case_forecast_curve_file) %>%
-      mutate(date_onset = dmy(Date) - ddays(1), # Assume onset date is ~1 day before reporting, maybe worth revisiting
-             n = CasesBa) %>% 
+      mutate(date_onset = ymd(Date) - ddays(1), # Assume onset date is ~1 day before reporting, maybe worth revisiting
+             n = Cases) %>% 
       drop_na(n) %>%
       select(date_onset, n)
   ), 
@@ -104,10 +113,11 @@ list(
     format = "fst_tbl"
   ),
   
+  
   # Read in the APDC data (with minimal filtering, but with concatenation of episodes)
   tar_target(
     hospital_data_unfiltered,
-    
+
     read_NSW_hospital_data(hospital_data_path)
   ),
   
@@ -137,10 +147,15 @@ list(
     get_time_varying_estimates(nsw_cases, hospital_data_unfiltered, clinical_parameters, forecast_dates)
   ),
   
+  tar_target(
+    time_varying_estimates_adj,
+    adjust_time_varying_estimates(time_varying_estimates)
+  ),
+  
   # Plot the above estimates
   tar_target(
     time_varying_estimates_plot,
-    plot_time_varying_estimates(time_varying_estimates, forecast_dates, plot_dir)
+    plot_time_varying_estimates(time_varying_estimates_adj, forecast_dates, plot_dir)
   ),
   
   # Simulate the clinical progression, with fitting if desired
@@ -148,7 +163,7 @@ list(
     sim_results,
     
     run_progression_model(
-      time_varying_estimates,
+      time_varying_estimates_adj,
       case_trajectory,
       clinical_parameter_samples,
       public_occupancy_data,

@@ -21,7 +21,13 @@ make_case_trajectory <- function(
     
     nsw_cases_count
   ) %>%
-    arrange(date_onset)
+    arrange(date_onset) %>%
+    
+    # left_join(get_neuts_change(.$date_onset) %>%
+    #             select(date, proportionBA4BA5),
+    #           by = c("date_onset" = "date")) %>%
+    
+    mutate(count = round(count))
   
   # Make sure our trajectory is complete, imputing missing values with simple linear interpolation
   # This might cause issues if there's a large enough gap between the backcast and forecast, so be careful with this
@@ -38,7 +44,7 @@ make_case_trajectory <- function(
     geom_line(aes(x = date_onset, y = count),
               case_trajectory) +
     
-    scale_x_date(date_breaks = "months") +
+    scale_x_date(date_breaks = "months", labels = scales::label_date_short()) +
     
     theme_minimal()
   

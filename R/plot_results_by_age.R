@@ -18,7 +18,7 @@ plot_results_by_age <- function(
     geom_vline(xintercept = forecast_dates$forecast_start, linetype = 'dashed'),
     scale_x_date(date_breaks = "months", labels = scales::label_date_short()),
     scale_y_continuous(breaks = scales::extended_breaks(), labels = scales::label_comma()),
-    coord_cartesian(xlim = c(ymd("2022-03-01"), NA))
+    coord_cartesian(xlim = c(ymd("2021-12-01"), NA))
   )
   
   results_aged_transitions_quants <- sim_results$results_aged_transitions_quants
@@ -49,7 +49,7 @@ plot_results_by_age <- function(
     
     p_common
   
-  ggsave(paste0(plot_dir, "/ages_admission_ward.png"), width = 8, height = 6, bg = "white")
+  ggsave(paste0(plot_dir, "/ages_admission_ward.png"), width = 10, height = 6, bg = "white")
   
   count_discharged <- hospital_data_unfiltered %>%
     filter(!is_still_in_hosp) %>%
@@ -77,7 +77,7 @@ plot_results_by_age <- function(
     
     p_common
   
-  ggsave(paste0(plot_dir, "/ages_discharge.png"), width = 8, height = 6, bg = "white")
+  ggsave(paste0(plot_dir, "/ages_discharge.png"), width = 10, height = 6, bg = "white")
 
   count_died <- hospital_data_unfiltered %>%
     filter(patient_died) %>%
@@ -105,7 +105,7 @@ plot_results_by_age <- function(
 
     p_common
 
-  ggsave(paste0(plot_dir, "/ages_death.png"), width = 8, height = 6, bg = "white")
+  ggsave(paste0(plot_dir, "/ages_death.png"), width = 10, height = 6, bg = "white")
 
   
   ggplot(results_aged_transitions_quants %>%
@@ -126,7 +126,7 @@ plot_results_by_age <- function(
     
     p_common
   
-  ggsave(paste0(plot_dir, "/ages_admission_ICU.png"), width = 8, height = 6, bg = "white")
+  ggsave(paste0(plot_dir, "/ages_admission_ICU.png"), width = 10, height = 6, bg = "white")
   
   
   
@@ -181,7 +181,7 @@ plot_results_by_age <- function(
     
     facet_wrap(~age_group) 
   
-  ggsave(paste0(plot_dir, "/ages_occupancy_ward.png"), width = 8, height = 6, bg = "white")
+  ggsave(paste0(plot_dir, "/ages_occupancy_ward.png"), width = 10, height = 6, bg = "white")
   
   ggplot(results_aged_quants %>%
            filter(group == "ICU")) +
@@ -199,6 +199,6 @@ plot_results_by_age <- function(
     facet_wrap(~age_group) 
   
   
-  ggsave(paste0(plot_dir, "/ages_occupancy_ICU.png"), width = 8, height = 6, bg = "white")
+  ggsave(paste0(plot_dir, "/ages_occupancy_ICU.png"), width = 10, height = 6, bg = "white")
   
 }

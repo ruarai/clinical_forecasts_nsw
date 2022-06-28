@@ -6,7 +6,22 @@ plot_main_results <- function(
   
   plot_dir, forecast_name
 ) {
+  
   results_count_quants <- sim_results$results_count_quants
+  # 
+  # BA2_results <- read_csv("results/fc_2022-06-20_2_BA2/fc_2022-06-20_2_BA2_result_summaries.csv", show_col_types = FALSE) %>%
+  #   select(date, ward_BA2 = ward_median, ICU_BA2 = ICU_median)
+  # 
+  # results_count_quants <- sim_results$results_count_quants %>%
+  # 
+  #   left_join(
+  #     BA2_results,
+  #     by = "date"
+  #   ) %>%
+  #   mutate(offset = case_when(group == "ward" ~ ward_BA2,
+  #                             group == "ICU" ~ ICU_BA2,
+  #                             TRUE ~ 0),
+  #          upper = upper + offset, lower = lower + offset)
   
   
   alpha_vals <- scales::rescale(rev(1/1.7^(1:8)), to = c(0.05, 0.99))
@@ -46,8 +61,11 @@ plot_main_results <- function(
   )
   
   p_ward <- ggplot(results_count_quants %>%
-                     filter(group == "ward", date >= ymd("2022-03-01"))) +
+                     filter(group == "ward", date >= ymd("2022-05-01"))) +
     geom_ribbon(aes(x = date, ymin = lower, ymax = upper, group = quant, fill = quant)) +
+    
+    # geom_line(aes(x = date, y = ward_BA2), linetype = 'dotted',
+    #           color = ward_cols[8]) +
     
     scale_fill_manual(values = ward_cols) +
     
@@ -69,11 +87,14 @@ plot_main_results <- function(
   
   
   p_ICU <- ggplot(results_count_quants %>%
-                    filter(group == "ICU", date >= ymd("2022-03-01"))) +
+                    filter(group == "ICU", date >= ymd("2022-05-01"))) +
     geom_ribbon(aes(x = date, ymin = lower, ymax = upper, group = quant, fill = quant)) +
     
-    scale_fill_manual(values = ICU_cols)  +
+    scale_fill_manual(values = ICU_cols) +
     
+    # geom_line(aes(x = date, y = ICU_BA2), linetype = 'dotted',
+    #           color = ICU_cols[8])  +
+
     geom_point(aes(x = date, y = count),
                public_occupancy_data %>%
                   filter(group == "ICU"),

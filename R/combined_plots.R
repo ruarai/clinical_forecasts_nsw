@@ -6,13 +6,14 @@ library(tidyverse)
 public_occupancy_data <- tar_read(public_occupancy_data)
 forecast_dates <- tar_read(forecast_dates)
 
-combined_name <- "2022-06-07_combined"
+combined_name <- "2022-06-14_scenarios"
 forecast_names <- c(
-  "fc_2022-06-07_Lo_final",
-  "fc_2022-06-07_Ba_final",
-  "fc_2022-06-07_Hi_final"
+  "fc_2022-06-14_BA_scenario_Mar_nofit",
+  "fc_2022-06-14_BA_scenario_Apr_nofit",
+  "fc_2022-06-14_BA_final"
 )
-forecast_labels <- c("Low", "Baseline", "High") %>% `names<-`(forecast_names)
+
+forecast_labels <- c("March", "April", "Current") %>% `names<-`(forecast_names)
 
 quant_files <- str_c("results/", forecast_names, "/", forecast_names, "_result_summaries.csv")
 
@@ -20,7 +21,16 @@ quant_files <- str_c("results/", forecast_names, "/", forecast_names, "_result_s
 quants <- map_dfr(quant_files, read_csv, show_col_types = FALSE, .id = "forecast_name")
 
 plot_data <- quants %>%
-  mutate(forecast_name = forecast_names[as.numeric(forecast_name)])
+  mutate(forecast_name = forecast_names[as.numeric(forecast_name)]) %>%
+  
+  mutate(offset = case_when(forecast_name == "fc_2022-06-14_BA_scenario_Mar_nofit" ~ 900,
+                              forecast_name == "fc_2022-06-14_BA_scenario_Apr_nofit" ~ 800,
+                              TRUE ~ 0),
+         ward_upper90 = ward_upper90 + offset,
+         ward_lower90 = ward_lower90 + offset,
+         ward_median = ward_median + offset) %>%
+  
+  mutate(forecast_name = factor(forecast_name, levels = forecast_names))
 
 
 
@@ -95,8 +105,9 @@ p_ICU <- ggplot(plot_data %>%
                    filter(date >= forecast_dates$forecast_start)) +
   geom_ribbon(aes(x = date, ymin = ICU_lower90, ymax = ICU_upper90, fill = forecast_name),
               alpha = 0.6) +
-  
+
   geom_line(aes(x = date, y = ICU_median, color = forecast_name)) +
+
   
   ggokabeito::scale_color_okabe_ito(name = "", labels = forecast_labels) +
   ggokabeito::scale_fill_okabe_ito(name = "", labels = forecast_labels) +

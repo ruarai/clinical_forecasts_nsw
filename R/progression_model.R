@@ -23,7 +23,17 @@ run_progression_model <- function(
       select(-c(date, age_group)) %>%
       as.matrix()
   }
-  
+  # 
+  # mat_pr_age_given_case <- time_varying_estimates %>%
+  #   group_by(date, bootstrap) %>%
+  #   mutate(pr_age_given_case = pr_age_given_case / sum(pr_age_given_case)) %>%
+  #   group_by(age_group, bootstrap) %>%
+  #   mutate(pr_age_given_case = if_else(date >= ymd("2022-04-01"), NA_real_, pr_age_given_case)) %>%
+  #   arrange(date) %>%
+  #   fill(pr_age_given_case, .direction = "down") %>%
+  #   ungroup() %>%
+  #   estimates_to_matrix(pr_age_given_case)
+
   mat_pr_age_given_case <- time_varying_estimates %>%
     group_by(date, bootstrap) %>%
     mutate(pr_age_given_case = pr_age_given_case / sum(pr_age_given_case)) %>%
@@ -52,15 +62,26 @@ run_progression_model <- function(
   ) %>%
     mutate(do_match = date >= forecast_dates$forecast_start - ddays(7) & date <= forecast_dates$forecast_start) %>%
     
+    #mutate(do_match = date >= ymd("2022-06-07") - ddays(7) & date <= ymd("2022-06-07")) %>% # final BA2 fitting period
+    
     left_join(
       public_occupancy_data %>%
         select(date, group, count) %>%
         pivot_wider(names_from = group, values_from = count),
       
       by = "date") %>%
+    # 
+    # left_join(
+    #   read_csv("results/fc_2022-06-20_2_BA2/fc_2022-06-20_2_BA2_result_summaries.csv", show_col_types = FALSE) %>%
+    #     select(date, ward_BA2 = ward_median, ICU_BA2 = ICU_median),
+    #   by = "date"
+    # ) %>%
+    # 
+    # mutate(ward = ward - ward_BA2, ICU = ICU - ICU_BA2,
+    #        ward = if_else(ward < 0, 0, ward), ICU = if_else(ICU < 0, 0, ICU)) %>%
     
-    mutate(ward = zoo::rollmean(ward, 7, align = "r", fill = NA),
-           ICU = zoo::rollmean(ICU, 7, align = "r", fill = NA),
+    mutate(#ward = zoo::rollmean(ward, 7, align = "r", fill = NA),
+           #ICU = zoo::rollmean(ICU, 7, align = "r", fill = NA),
            ward_vec = if_else(do_match, ward, -1),
            ICU_vec = if_else(do_match, ICU, -1),
            
@@ -68,8 +89,8 @@ run_progression_model <- function(
            ICU_vec = replace_na(ICU_vec, -1))
   
   # Define our priors for length-of-stay and pr_hosp adjustment
-  prior_sigma_los <- if_else(do_ABC, 0.8, 0)
-  prior_sigma_hosp <- if_else(do_ABC, 0.8, 0)
+  prior_sigma_los <- if_else(do_ABC, 0.4, 0)
+  prior_sigma_hosp <- if_else(do_ABC, 0.4, 0)
   
   # Define our thresholds for the adaptive ABC fitting
   thresholds <- c(0.1, 0.2, 0.3, 0.4, 0.5, 10)
@@ -88,7 +109,7 @@ run_progression_model <- function(
     
     do_ABC = do_ABC,
     thresholds = thresholds,
-    rejections_per_selections = if_else(do_ABC, 500, 1),
+    rejections_per_selections = if_else(do_ABC, 100, 1),
     
     prior_sigma_los = prior_sigma_los,
     prior_sigma_hosp = prior_sigma_hosp,

@@ -26,5 +26,11 @@ export_results <- function(sim_results, plot_dir, forecast_name) {
     
     write_csv(file_out)
   
+  
+  
+  trajectories_file_out <- paste0(plot_dir, "/trajectories.fst")
+  
+  fst::write_fst(sim_results$results_formatted, path = trajectories_file_out, compress = 100)
+  
   return(file_out)
 }

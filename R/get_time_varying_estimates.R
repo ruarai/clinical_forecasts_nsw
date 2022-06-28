@@ -83,7 +83,8 @@ get_time_varying_estimates <- function(
   n_bootstraps <- 50
   
   # How wide is our running average? 1 week seems to work okay with current case numbers
-  window_width <- 7
+  # Update 21-06-22: use 2 weeks for better long-term performance?
+  window_width <- 14
   
   # Define the vector of difference estimation windows
   window_starts <- 1:(length(estimation_period_days) - window_width)
