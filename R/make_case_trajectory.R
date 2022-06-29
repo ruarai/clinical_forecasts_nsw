@@ -23,10 +23,6 @@ make_case_trajectory <- function(
   ) %>%
     arrange(date_onset) %>%
     
-    # left_join(get_neuts_change(.$date_onset) %>%
-    #             select(date, proportionBA4BA5),
-    #           by = c("date_onset" = "date")) %>%
-    
     mutate(count = round(count))
   
   # Make sure our trajectory is complete, imputing missing values with simple linear interpolation
