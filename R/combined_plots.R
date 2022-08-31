@@ -2,17 +2,19 @@
 
 library(lubridate)
 library(tidyverse)
+library(targets)
 
 public_occupancy_data <- tar_read(public_occupancy_data)
 forecast_dates <- tar_read(forecast_dates)
 
-combined_name <- "2022-06-28_scenarios"
+combined_name <- "2022-08-29_scenarios"
 forecast_names <- c(
-  "fc_2022-06-28_low",
-  "fc_2022-06-28_baseline"
+  "fc_2022-08-29_final_1",
+  "fc_2022-08-29_final_2",
+  "fc_2022-08-29_final_3"
 )
 
-forecast_labels <- c("Low", "Baseline") %>% `names<-`(forecast_names)
+forecast_labels <- c("Mid", "Low", "High") %>% `names<-`(forecast_names)
 
 quant_files <- str_c("results/", forecast_names, "/", forecast_names, "_result_summaries.csv")
 
@@ -21,7 +23,6 @@ quants <- map_dfr(quant_files, read_csv, show_col_types = FALSE, .id = "forecast
 
 plot_data <- quants %>%
   mutate(forecast_name = forecast_names[as.numeric(forecast_name)]) %>%
-  
   mutate(forecast_name = factor(forecast_name, levels = forecast_names))
 
 
@@ -41,7 +42,7 @@ ICU_cols <- shades::opacity(ICU_base_colour, alpha_vals)
 plots_common <- list(
   scale_shape_manual(values = c("FALSE" = 1, "TRUE" = 16)),
   scale_x_date(date_breaks = "months",
-               labels = scales::label_date_short(format = c("%Y", "%B")),
+               labels = scales::label_date_short(format = c("%Y", "%b")),
                expand = expansion(mult = c(0.01, 0.05))),
   scale_y_continuous(breaks = scales::extended_breaks(),
                      labels = scales::label_comma(),
@@ -69,7 +70,7 @@ p_ward <- ggplot(plot_data %>%
   geom_ribbon(aes(x = date, ymin = ward_lower90, ymax = ward_upper90, fill = forecast_name),
               alpha = 0.6) +
   
-  geom_line(aes(x = date, y = ward_median, color = forecast_name)) +
+  #geom_line(aes(x = date, y = ward_median, color = forecast_name)) +
   
   ggokabeito::scale_color_okabe_ito(name = "", labels = forecast_labels) +
   ggokabeito::scale_fill_okabe_ito(name = "", labels = forecast_labels) +
@@ -78,10 +79,9 @@ p_ward <- ggplot(plot_data %>%
   geom_point(aes(x = date, y = count),
              public_occupancy_data %>%
                filter(group == "ward"),
-             pch = 1,
              color = "grey20",
              
-             size = 1, stroke = 0.4) +
+             size = 0.6, stroke = 0.2) +
   
   geom_vline(aes(xintercept = forecast_dates$forecast_start), linetype = 'dashed') +
   
@@ -89,8 +89,7 @@ p_ward <- ggplot(plot_data %>%
   
   xlab(NULL) + ylab("Count") +
   
-  ggtitle("Ward beds occupied") +
-  theme(legend.position = "bottom")
+  ggtitle("Ward beds occupied")
 
 
 p_ICU <- ggplot(plot_data %>%
@@ -98,7 +97,7 @@ p_ICU <- ggplot(plot_data %>%
   geom_ribbon(aes(x = date, ymin = ICU_lower90, ymax = ICU_upper90, fill = forecast_name),
               alpha = 0.6) +
 
-  geom_line(aes(x = date, y = ICU_median, color = forecast_name)) +
+  #geom_line(aes(x = date, y = ICU_median, color = forecast_name)) +
 
   
   ggokabeito::scale_color_okabe_ito(name = "", labels = forecast_labels) +
@@ -108,10 +107,9 @@ p_ICU <- ggplot(plot_data %>%
   geom_point(aes(x = date, y = count),
              public_occupancy_data %>%
                filter(group == "ICU"),
-             pch = 1,
              color = "grey20",
              
-             size = 1, stroke = 0.4) +
+             size = 0.6, stroke = 0.2) +
   
   geom_vline(aes(xintercept = forecast_dates$forecast_start), linetype = 'dashed') +
   
@@ -119,17 +117,19 @@ p_ICU <- ggplot(plot_data %>%
   
   xlab(NULL) + ylab("Count") +
   
-  ggtitle("ICU beds occupied") +
-  theme(legend.position = "bottom")
-
+  ggtitle("ICU beds occupied")
 
 
 cowplot::plot_grid(
-  p_ward,
-  p_ICU,
+  cowplot::plot_grid(
+    p_ward,
+    p_ICU,
+    ncol = 1,
+    align = "hv", axis = "lr"
+  ),
+  cowplot::get_legend(p_ICU + theme(legend.position = "bottom")),
   ncol = 1,
-  align = "hv", axis = "lr"
+  rel_heights = c(12, 1)
 )
-
 
 ggsave(paste0("results/", combined_name, "_estimates.png"), width = 10, height = 8, bg = "white")

@@ -23,16 +23,6 @@ run_progression_model <- function(
       select(-c(date, age_group)) %>%
       as.matrix()
   }
-  # 
-  # mat_pr_age_given_case <- time_varying_estimates %>%
-  #   group_by(date, bootstrap) %>%
-  #   mutate(pr_age_given_case = pr_age_given_case / sum(pr_age_given_case)) %>%
-  #   group_by(age_group, bootstrap) %>%
-  #   mutate(pr_age_given_case = if_else(date >= ymd("2022-04-01"), NA_real_, pr_age_given_case)) %>%
-  #   arrange(date) %>%
-  #   fill(pr_age_given_case, .direction = "down") %>%
-  #   ungroup() %>%
-  #   estimates_to_matrix(pr_age_given_case)
 
   mat_pr_age_given_case <- time_varying_estimates %>%
     group_by(date, bootstrap) %>%
@@ -62,27 +52,14 @@ run_progression_model <- function(
   ) %>%
     mutate(do_match = date >= forecast_dates$forecast_start - ddays(7) & date <= forecast_dates$forecast_start) %>%
     
-    #mutate(do_match = date >= ymd("2022-06-07") - ddays(7) & date <= ymd("2022-06-07")) %>% # final BA2 fitting period
-    
     left_join(
       public_occupancy_data %>%
         select(date, group, count) %>%
         pivot_wider(names_from = group, values_from = count),
       
       by = "date") %>%
-    # 
-    # left_join(
-    #   read_csv("results/fc_2022-06-20_2_BA2/fc_2022-06-20_2_BA2_result_summaries.csv", show_col_types = FALSE) %>%
-    #     select(date, ward_BA2 = ward_median, ICU_BA2 = ICU_median),
-    #   by = "date"
-    # ) %>%
-    # 
-    # mutate(ward = ward - ward_BA2, ICU = ICU - ICU_BA2,
-    #        ward = if_else(ward < 0, 0, ward), ICU = if_else(ICU < 0, 0, ICU)) %>%
     
-    mutate(#ward = zoo::rollmean(ward, 7, align = "r", fill = NA),
-           #ICU = zoo::rollmean(ICU, 7, align = "r", fill = NA),
-           ward_vec = if_else(do_match, ward, -1),
+    mutate(ward_vec = if_else(do_match, ward, -1),
            ICU_vec = if_else(do_match, ICU, -1),
            
            ward_vec = replace_na(ward_vec, -1),
@@ -94,6 +71,39 @@ run_progression_model <- function(
   
   # Define our thresholds for the adaptive ABC fitting
   thresholds <- c(0.1, 0.2, 0.3, 0.4, 0.5, 10)
+  
+  
+
+  # date_seq <- seq(forecast_dates$simulation_start, forecast_dates$forecast_horizon, "days")
+  # 
+  # gengamma_delay_order <- c("ward_to_discharge", "ward_to_ICU", "ward_to_death", "ICU_to_discharge", "ICU_to_postICU", "ICU_to_death", 
+  #                     "postICU_to_discharge", "postICU_to_death")
+  # 
+  # gengamma_delay <- read_csv("~/source/los_rates/results/fit_2022_08_15/distribution_fits.csv") %>% 
+  #   
+  #   mutate(coding = factor(coding, levels = gengamma_delay_order)) %>%
+  #   
+  #   
+  #   complete(age, coding, date = date_seq) %>%
+  #   arrange(age, coding, date) %>%
+  #   group_by(age, coding) %>%
+  #   
+  #   mutate(across(c(mu, sigma, Q), ~ zoo::na.approx(., na.rm = FALSE))) %>%
+  #   
+  #   fill(mu, sigma, Q, .direction = "down") %>%
+  #   ungroup() %>%
+  #   
+  #   filter(date >= date_seq[1], date <= date_seq[length(date_seq)]) %>%
+  #   
+  #   
+  #   
+  #   arrange(age, coding, date) %>%
+  #   
+  #   select(age, coding, date, mu, sigma, Q) %>%
+  #   
+  #   mutate(age = age / 10,
+  #          coding = match(coding, gengamma_delay_order) - 1,
+  #          date = match(date, date_seq) - 1)
   
   
   # Perform the actual simulation and fitting
@@ -123,7 +133,11 @@ run_progression_model <- function(
     
     mat_pr_age_given_case = mat_pr_age_given_case,
     mat_pr_hosp = mat_pr_hosp,
-    mat_pr_ICU = mat_pr_ICU
+    mat_pr_ICU = mat_pr_ICU#,
+    
+    
+    #delay_parameters = gengamma_delay
+    
   )
   
   b <- Sys.time()

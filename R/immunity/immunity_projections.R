@@ -208,13 +208,16 @@ simulate_immune_prediction <- function(i_sim) {
       p_infandvax * infection_vacc_transmission_effect
     
     
-    # weighted_hospitalisation <- p_infected_only * (1 - infection_acquisition_effect) * infection_hospitalisation_effect +
-    #   p_vaccinated_only * (1 - vaccination_acquisition_effect[pred_ix,]) * vaccination_hospitalisation_effect[pred_ix, ] +
-    #   p_infandvax * (1 - infection_vacc_acquisition_effect) * infection_vacc_hospitalisation_effect
+    p_none <- 1 - (p_infandvax + p_vaccinated_only + p_infected_only)
     
-    weighted_hospitalisation <- p_infected_only * infection_hospitalisation_effect +
-      p_vaccinated_only * vaccination_hospitalisation_effect[pred_ix, ] +
-      p_infandvax * infection_vacc_hospitalisation_effect
+    p_infected_only_is_infected <- p_infected_only * (1 - infection_acquisition_effect)
+    p_vaccinated_only_is_infected <- p_vaccinated_only * (1 - vaccination_acquisition_effect[pred_ix,])
+    p_infandvax_is_infected <- p_infandvax * (1 - infection_vacc_acquisition_effect) 
+    adj_amount <- 1 / (p_infected_only_is_infected + p_vaccinated_only_is_infected + p_infandvax_is_infected + p_none)
+    
+    weighted_hospitalisation <- (p_infected_only_is_infected * adj_amount) * infection_hospitalisation_effect +
+      (p_vaccinated_only_is_infected * adj_amount) * vaccination_hospitalisation_effect[pred_ix, ] +
+      (p_infandvax_is_infected * adj_amount) * infection_vacc_hospitalisation_effect
     
     
     acquisition_multiplier <- 1 - weighted_acquisition

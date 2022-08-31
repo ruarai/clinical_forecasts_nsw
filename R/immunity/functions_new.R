@@ -11411,8 +11411,8 @@ get_omicron_params_wide <- function(
     param_file,
     col_types = cols(
       parameter = col_character(),
-      intermediate = col_double(),
-      optimistic = col_double(),
+      #intermediate = col_double(),
+      #optimistic = col_double(),
       estimate = col_double(),
       pessimistic = col_double()
     )

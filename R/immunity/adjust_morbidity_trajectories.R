@@ -28,12 +28,13 @@ adjust_morbidity_trajectories <- function(
   incidental_rate <- 0.5
   
   adjusted_estimates_state <- morbidity_trajectories_state %>%
-    rename(pr_age_old = pr_age_given_case) %>%
+    #rename(pr_age_old = pr_age_given_case) %>%
     
     left_join(
       immune_predictions_complete %>%
         ungroup() %>%
-        select(-sim),
+        select(-sim) %>%
+        select(-pr_age_given_case),
       
       by = c("date", "age_group")
     ) %>%
@@ -50,7 +51,8 @@ adjust_morbidity_trajectories <- function(
     fill(x, .direction = "down") %>%
     ungroup() %>%
     
-    mutate(pred_pr_hosp = pr_hosp_incidental + x * m_hosp) %>%
+    mutate(pred_pr_hosp = pr_hosp_incidental + x * m_hosp,
+           pr_age_old = 1 / 9) %>%
     
     
     select(bootstrap, date, age_group, pr_age_given_case, pr_hosp = pred_pr_hosp, pr_ICU, pr_hosp_old = pr_hosp, pr_age_old)

@@ -1,24 +1,28 @@
 
 preprepare_vaccination_tables <- function(vaccination_coverage_state, date_start) {
-  library(future.callr)
-  plan(callr)
+  # library(future.callr)
+  # plan(callr)
+  
+  require(progress)
+  pb <- progress_bar$new(total = nrow(vaccination_coverage_state))
   
   vaccination_coverage_state %>%
     
-    furrr::future_pmap(
-      prepare_table,
+    pmap(
+      prepare_table, pb, date_start, params, reff_env, age_band_order
       
-      .options = furrr::furrr_options(
-        globals = c("prepare_table", "date_start", "params", "reff_env",
-                    "age_band_order"),
-        packages = c("dplyr", "tidyr")
-      )
+       
+      # .options = furrr::furrr_options(
+      #   globals = c("prepare_table", "date_start", "params", "reff_env",
+      #               "age_band_order"),
+      #   packages = c("dplyr", "tidyr")
+      #)
     )
 }
 
 
-prepare_table <- function(date, cohorts, ...) {
-  #pb$tick()
+prepare_table <- function(date, cohorts, pb, date_start, params, reff_env, age_band_order, ...) {
+  pb$tick()
   
   # Sequence that our infection data will align with
   inf_days_ago <- seq(0, as.numeric(date - date_start), by = 4)

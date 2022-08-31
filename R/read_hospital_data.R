@@ -56,7 +56,7 @@ read_NSW_linelist <- function(
   
   is_duration_too_long <- function(start, end) {
     days <- time_diff_to_days(end - start)
-    replace_na(days > 120, FALSE)
+    replace_na(days > 365 * 2, FALSE)
   }
   
   

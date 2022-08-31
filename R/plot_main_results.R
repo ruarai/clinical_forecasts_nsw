@@ -8,7 +8,8 @@ plot_main_results <- function(
 ) {
   
   results_count_quants <- sim_results$results_count_quants
-  # 
+  
+  
   # BA2_results <- read_csv("results/fc_2022-06-20_2_BA2/fc_2022-06-20_2_BA2_result_summaries.csv", show_col_types = FALSE) %>%
   #   select(date, ward_BA2 = ward_median, ICU_BA2 = ICU_median)
   # 
@@ -38,7 +39,7 @@ plot_main_results <- function(
   plots_common <- list(
     scale_shape_manual(values = c("FALSE" = 1, "TRUE" = 16)),
     scale_x_date(date_breaks = "months",
-                 labels = scales::label_date_short(format = c("%Y", "%B")),
+                 labels = scales::label_date_short(format = c("%Y", "%b")),
                  expand = expansion(mult = c(0.01, 0.05))),
     scale_y_continuous(breaks = scales::extended_breaks(),
                        labels = scales::label_comma(),
@@ -61,7 +62,7 @@ plot_main_results <- function(
   )
   
   p_ward <- ggplot(results_count_quants %>%
-                     filter(group == "ward", date >= ymd("2022-05-01"))) +
+                     filter(group == "ward", date >= ymd("2022-04-01"))) +
     geom_ribbon(aes(x = date, ymin = lower, ymax = upper, group = quant, fill = quant)) +
     
     # geom_line(aes(x = date, y = ward_BA2), linetype = 'dotted',
@@ -87,7 +88,7 @@ plot_main_results <- function(
   
   
   p_ICU <- ggplot(results_count_quants %>%
-                    filter(group == "ICU", date >= ymd("2022-05-01"))) +
+                    filter(group == "ICU", date >= ymd("2022-04-01"))) +
     geom_ribbon(aes(x = date, ymin = lower, ymax = upper, group = quant, fill = quant)) +
     
     scale_fill_manual(values = ICU_cols) +

@@ -7,6 +7,7 @@ if(use_immunity) {
   source("R/immunity/get_params.R")
   source("R/immunity/preprepare_vaccination_tables.R")
   source("R/immunity/immunity_projections.R")
+  source("R/immunity/get_vaccination_forecast.R")
   
   
   
@@ -21,11 +22,7 @@ if(use_immunity) {
       seq(forecast_dates$simulation_start, forecast_dates$forecast_horizon, by = "4 days")
     ),
     
-    tar_target(vaccination_scenario, 254),
-    tar_target(vaccination_data, 
-               read_rds("../clinical_forecasting/data/vaccination/vaccine_state_20220627.rds") %>% 
-                 filter(scenario == vaccination_scenario),
-               format = "fst_tbl"),
+    tar_target(vaccination_data, get_vaccination_forecast(quantium_zip_path), format = "fst_tbl"),
     tar_target(
       neuts_change, 
       get_neuts_change(prediction_dates)
