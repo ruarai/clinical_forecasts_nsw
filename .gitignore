@@ -11,3 +11,5 @@ results
 *.xlsx
 *.pdf
 _targets
+outputs
+*.rdata
