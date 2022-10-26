@@ -58,7 +58,7 @@ plot_main_results <- function(
           axis.text = element_text(size = 12),
           axis.title.y = element_blank(),
           text = element_text(family = "Helvetica")),
-    coord_cartesian(xlim = c(ymd("2021-12-01"), NA))
+    coord_cartesian(xlim = c(ymd("2021-12-01"), forecast_dates$forecast_start + ddays(60)))
   )
   
   p_ward <- ggplot(results_count_quants %>%

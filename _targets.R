@@ -1,5 +1,6 @@
 
 library(targets)
+library(tarchetypes)
 
 options(tidyverse.quiet = TRUE)
 
@@ -27,35 +28,25 @@ source("R/get_public_occupancy.R")
 
 source("R/plot_time_varying_morbidity.R")
 
-use_immunity <- TRUE
-source("t_immunity.R")
-source("R/immunity/adjust_morbidity_trajectories.R")
 
 list(
   
   # The date the forecast is run, currently only used for naming the output
-  tar_target(date_forecasting, ymd("2022-08-29")),
+  tar_target(date_forecasting, ymd("2022-10-26")),
   
   # The output name of the forecast, used for labeling output files
   tar_target(forecast_name, str_c("fc_", date_forecasting, "_final_3")),
   
   tar_target(perform_fitting, TRUE),
   
-  # Input files for the forecast. Case forecast is via James Wood, cases_path is for NCIMS, hospital_data_path is for APDC
-  tar_target(case_forecast_curve_file, "data/cases/Projections_20220829.csv"),
-  tar_target(cases_path, "../email_digester/downloads/case_linelist/20220829 - Case list - Freya Shearer.zip"),
-  tar_target(hospital_data_path, "../email_digester/downloads/hospital_linelist/NSW_out_episode_2022_08_29.xlsx"),
-  
-  tar_target(quantium_zip_path, "~/mfluxunimelb/vaccine_data_products/raw_quantium_forecasts/2022-08-15-rosybrown2641-booster-uptake-scenarios.zip"),
-  
-  # Path to data for ward and ICU occupancy by age, used for diagnostic plots
-  # Does not necessarily need to be updated weekly.
-  # tar_target(occupancy_by_age_ward_path, "~/data_private/NSW_occupancy/Ward_2022-06-27_UNSW.csv"),
-  # tar_target(occupancy_by_age_ICU_path, "~/data_private/NSW_occupancy/ICU_2022-06-27_UNSW.csv"),
-  
+  # Input files for the forecast. Case forecast is via James Wood, cases_path is for NCIMS, hospital_data_path is for PFP extract
+  tar_target(case_forecast_curve_file, "data/cases/Projections_20221026.csv"),
+  tar_target(cases_path, "../email_digester/downloads/case_linelist/20221024 - Case list - Freya Shearer.zip"),
+  tar_target(hospital_data_path, "../email_digester/downloads/hospital_linelist/NSW_out_episode_2022_10_25.xlsx"),
+  tar_target(summary_counts_path, "../email_digester/downloads/nsw_summary_counts/nsw_data_20221025.csv"),
   
   # How far into the past does the backcast begin
-  tar_target(date_simulation_start, ymd("2021-12-01")),
+  tar_target(date_simulation_start, ymd("2022-04-01")),
   
   # Load in the case forecast and format appropriately
   tar_target(
@@ -111,7 +102,8 @@ list(
   # Read in the NCIMS data
   tar_target(
     nsw_cases,
-    read_nsw_cases(cases_path),
+    read_nsw_cases(cases_path) %>%
+      filter(TEST_TYPE == "PCR"),
     format = "fst_tbl"
   ),
   
@@ -135,7 +127,7 @@ list(
     )
   ),
   
-  tar_target(public_occupancy_data, get_public_occupancy(date_forecasting, forecast_dates)),
+  tar_target(public_occupancy_data, get_public_occupancy(summary_counts_path)),
   
   # Produce a joint case trajectory combining backcast and forecast
   tar_target(
@@ -149,23 +141,11 @@ list(
     get_time_varying_estimates(nsw_cases, hospital_data_unfiltered, clinical_parameters, forecast_dates)
   ),
   
-  t_preforecasting_immunity,
-  
-  tar_target(
-    time_varying_estimates_adj,
-    adjust_morbidity_trajectories(
-      use_immunity,
-      immune_predictions_state,
-      time_varying_estimates,
-      forecast_dates$forecast_start
-    ),
-    format = "fst_tbl"
-  ),
   
   tar_target(
     morbidity_trajectories_plot,
     plot_morbidity_trajectories(
-      time_varying_estimates_adj,
+      time_varying_estimates,
       "NSW",
       forecast_dates %>% mutate(NNDSS = hospital_data),
       14,
@@ -178,7 +158,7 @@ list(
     sim_results,
     
     run_progression_model(
-      time_varying_estimates_adj,
+      time_varying_estimates,
       case_trajectory,
       clinical_parameter_samples,
       public_occupancy_data,
@@ -192,12 +172,6 @@ list(
     main_results_plots,
     plot_main_results(sim_results, public_occupancy_data, forecast_dates, plot_dir, forecast_name)
   ),
-  
-  # Produce additional plots of occupancy and transitions by age
-  # tar_target(
-  #   by_age_plots,
-  #   plot_results_by_age(sim_results, hospital_data_unfiltered, occupancy_by_age_ward_path, occupancy_by_age_ICU_path, forecast_dates, plot_dir)
-  # ),
   
   # Export the quantiles of ward and ICU occupancy as used by Duleepa
   tar_target(

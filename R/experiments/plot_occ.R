@@ -52,7 +52,7 @@ plots_common <- list(
 )
 
 
-ll_raw <- readxl::read_excel("~/source/email_digester/downloads/hospital_linelist/NSW_out_episode_2022_08_15.xlsx", sheet = 2)
+ll_raw <- readxl::read_excel("~/source/email_digester/downloads/hospital_linelist/NSW_out_episode_2022_09_05.xlsx", sheet = 2)
 
 source("../los_rates/R/process_NSW_data.R")
 
@@ -61,22 +61,23 @@ ll_processed <- ll_processing$data
 
 
 obs_occ_ll <- tibble(
-  date = seq(ymd("2021-07-01"), ymd("2022-08-15"), "day")
+  date = seq(ymd("2021-07-01"), ymd("2022-09-15"), "day")
 ) %>%
   rowwise() %>% 
   mutate(
-    n_ward = ll_processed %>%
-      filter(dt_hosp_admission <= date, dt_hosp_discharge >= date | is.na(dt_hosp_discharge),
-             dt_first_icu >= date | is.na(dt_first_icu), dt_last_icu <= date | is.na(dt_last_icu)) %>%
+    n_ward = ll_raw %>%
+      filter(admit_date_dt <= date, discharge_date_dt >= date | still_in_hosp == 1,
+             first_icu_date_dt >= date | is.na(first_icu_date_dt), last_icu_date_dt <= date | is.na(last_icu_date_dt),
+             #admit_date_dt - covid_to_adm <= date + ddays(7)
+             ) %>%
       nrow(),
-    n_ICU = ll_processed %>%
-      filter(dt_first_icu <= date, dt_last_icu >= date) %>%
+    n_ICU = ll_raw %>%
+      filter(first_icu_date_dt <= date, last_icu_date_dt >= date) %>%
       nrow()
   )
 
 
-plot_obs_occ_ll <- obs_occ_ll %>%
-  mutate(censored = date >= ymd("2022-07-15"))
+plot_obs_occ_ll <- obs_occ_ll
 
 p_ward <- ggplot(results_count_quants %>%
                    filter(group == "ward", date >= ymd("2021-01-01"))) +
@@ -91,12 +92,12 @@ p_ward <- ggplot(results_count_quants %>%
             
             size = 0.8) +
   
-  geom_line(aes(x = date, y = count),
-            public_occupancy_data %>%
-              filter(group == "ward"),
-            color = "grey50",
-            
-            size = 0.5) +
+  # geom_line(aes(x = date, y = count),
+  #           public_occupancy_data %>%
+  #             filter(group == "ward"),
+  #           color = "grey50",
+  #           
+  #           size = 0.5) +
   
   geom_vline(aes(xintercept = forecast_dates$forecast_start), linetype = 'dashed') +
   
@@ -120,12 +121,12 @@ p_ICU <- ggplot(results_count_quants %>%
             
             size = 0.8) +
   
-  geom_line(aes(x = date, y = count),
-            public_occupancy_data %>%
-              filter(group == "ICU"),
-            color = "grey50",
-            
-            size = 0.5) +
+  # geom_line(aes(x = date, y = count),
+  #           public_occupancy_data %>%
+  #             filter(group == "ICU"),
+  #           color = "grey50",
+  #           
+  #           size = 0.5) +
   
   
   geom_vline(aes(xintercept = forecast_dates$forecast_start), linetype = 'dashed') +

@@ -189,7 +189,7 @@ plot_morbidity_trajectories <- function(
     
     
     plot_data_hosp <- morbidity_trajectories_state %>%
-      filter(date >= ymd("2022-02-01")) %>%
+      filter(date >= ymd("2022-01-10")) %>%
       select(bootstrap, date, age_group, pr_hosp) %>%
       
       group_by(date, age_group) %>%

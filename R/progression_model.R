@@ -74,37 +74,40 @@ run_progression_model <- function(
   
   
 
-  # date_seq <- seq(forecast_dates$simulation_start, forecast_dates$forecast_horizon, "days")
-  # 
-  # gengamma_delay_order <- c("ward_to_discharge", "ward_to_ICU", "ward_to_death", "ICU_to_discharge", "ICU_to_postICU", "ICU_to_death", 
-  #                     "postICU_to_discharge", "postICU_to_death")
-  # 
-  # gengamma_delay <- read_csv("~/source/los_rates/results/fit_2022_08_15/distribution_fits.csv") %>% 
-  #   
-  #   mutate(coding = factor(coding, levels = gengamma_delay_order)) %>%
-  #   
-  #   
-  #   complete(age, coding, date = date_seq) %>%
-  #   arrange(age, coding, date) %>%
-  #   group_by(age, coding) %>%
-  #   
-  #   mutate(across(c(mu, sigma, Q), ~ zoo::na.approx(., na.rm = FALSE))) %>%
-  #   
-  #   fill(mu, sigma, Q, .direction = "down") %>%
-  #   ungroup() %>%
-  #   
-  #   filter(date >= date_seq[1], date <= date_seq[length(date_seq)]) %>%
-  #   
-  #   
-  #   
-  #   arrange(age, coding, date) %>%
-  #   
-  #   select(age, coding, date, mu, sigma, Q) %>%
-  #   
-  #   mutate(age = age / 10,
-  #          coding = match(coding, gengamma_delay_order) - 1,
-  #          date = match(date, date_seq) - 1)
-  
+date_seq <- seq(forecast_dates$simulation_start, forecast_dates$forecast_horizon, "days")
+
+gengamma_delay_order <- c("ward_to_discharge", "ward_to_ICU", "ward_to_death", "ICU_to_discharge", "ICU_to_postICU", "ICU_to_death",
+                    "postICU_to_discharge", "postICU_to_death")
+
+gengamma_delay <- read_csv("~/source/los_rates/results/fit_2022_09_05_2/distribution_fits.csv",
+                           show_col_types = FALSE) %>%
+
+  mutate(coding = factor(coding, levels = gengamma_delay_order)) %>%
+
+
+  complete(age, coding, date = date_seq) %>%
+  arrange(age, coding, date) %>%
+  group_by(age, coding) %>%
+
+  mutate(across(c(mu, sigma, Q, p_trans), ~ zoo::na.approx(., na.rm = FALSE))) %>%
+
+  fill(mu, sigma, Q, p_trans, .direction = "down") %>%
+  ungroup() %>%
+
+  filter(date >= date_seq[1], date <= date_seq[length(date_seq)]) %>%
+
+
+
+  arrange(age, coding, date) %>%
+
+  select(age, coding, date, mu, sigma, Q, p_trans) %>%
+
+  mutate(age = age / 10,
+         coding = match(coding, gengamma_delay_order) - 1,
+         date = match(date, date_seq) - 1) %>%
+
+  rename(pr_trans = p_trans)
+
   
   # Perform the actual simulation and fitting
   a <- Sys.time()
@@ -112,7 +115,7 @@ run_progression_model <- function(
     n_samples = 4000,
     n_delay_samples = 512,
     
-    n_outputs = 1000,
+    n_outputs = 500,
     
     n_days = n_days,
     steps_per_day = 4,

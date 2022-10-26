@@ -9,7 +9,7 @@ read_NSW_hospital_data <- function(hospital_data_path) {
   
   source("R/age_groups.R")
   
-  linelist_raw <- readxl::read_xlsx(hospital_data_path, sheet = 2)
+  linelist_raw <- readxl::read_xlsx(hospital_data_path, sheet = 1)
   
   read_NSW_linelist(linelist_raw, remove_adm_delay = FALSE, remove_sep_episodes = FALSE) %>%
     mutate(age_group = assign_10yr_age_group(age),
@@ -33,7 +33,11 @@ read_NSW_linelist <- function(
            true_icu_hours = icu_hours,
            days_onset_to_adm = covid_to_adm,
            ward = WARD_TYPE,
-           subward = SUB_WARD_TYPE)
+           subward = SUB_WARD_TYPE)# %>%
+    
+    # group_by(person_id) %>%
+    # filter(first(days_onset_to_adm) > 1)
+    
   
   load_date <- first(clinical_linelist$load_date)
   

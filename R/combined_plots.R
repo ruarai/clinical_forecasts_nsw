@@ -4,14 +4,17 @@ library(lubridate)
 library(tidyverse)
 library(targets)
 
-public_occupancy_data <- tar_read(public_occupancy_data)
 forecast_dates <- tar_read(forecast_dates)
 
-combined_name <- "2022-08-29_scenarios"
+
+public_occupancy_data <- tar_read(public_occupancy_data) %>%
+  filter(date <= forecast_dates$forecast_start + ddays(4))
+
+combined_name <- "2022-10-17_scenarios"
 forecast_names <- c(
-  "fc_2022-08-29_final_1",
-  "fc_2022-08-29_final_2",
-  "fc_2022-08-29_final_3"
+  "fc_2022-10-17_final_1",
+  "fc_2022-10-17_final_2",
+  "fc_2022-10-17_final_3"
 )
 
 forecast_labels <- c("Mid", "Low", "High") %>% `names<-`(forecast_names)
@@ -19,7 +22,8 @@ forecast_labels <- c("Mid", "Low", "High") %>% `names<-`(forecast_names)
 quant_files <- str_c("results/", forecast_names, "/", forecast_names, "_result_summaries.csv")
 
 
-quants <- map_dfr(quant_files, read_csv, show_col_types = FALSE, .id = "forecast_name")
+quants <- map_dfr(quant_files, read_csv, show_col_types = FALSE, .id = "forecast_name") %>%
+  filter(date <= forecast_dates$forecast_start + ddays(30))
 
 plot_data <- quants %>%
   mutate(forecast_name = forecast_names[as.numeric(forecast_name)]) %>%
@@ -61,7 +65,7 @@ plots_common <- list(
         axis.text = element_text(size = 12),
         axis.title.y = element_blank(),
         text = element_text(family = "Helvetica")),
-  coord_cartesian(xlim = c(ymd("2021-12-01"), NA))
+  coord_cartesian(xlim = c(ymd("2021-12-01"), forecast_dates$forecast_start + ddays(60)))
 )
 
 
@@ -74,6 +78,9 @@ p_ward <- ggplot(plot_data %>%
   
   ggokabeito::scale_color_okabe_ito(name = "", labels = forecast_labels) +
   ggokabeito::scale_fill_okabe_ito(name = "", labels = forecast_labels) +
+  
+  geom_vline(aes(xintercept = forecast_dates$forecast_start), linetype = 'dashed',
+             color = 'grey50') +
 
   
   geom_point(aes(x = date, y = count),
@@ -82,8 +89,6 @@ p_ward <- ggplot(plot_data %>%
              color = "grey20",
              
              size = 0.6, stroke = 0.2) +
-  
-  geom_vline(aes(xintercept = forecast_dates$forecast_start), linetype = 'dashed') +
   
   plots_common +
   
@@ -103,6 +108,9 @@ p_ICU <- ggplot(plot_data %>%
   ggokabeito::scale_color_okabe_ito(name = "", labels = forecast_labels) +
   ggokabeito::scale_fill_okabe_ito(name = "", labels = forecast_labels) +
   
+  geom_vline(aes(xintercept = forecast_dates$forecast_start), linetype = 'dashed',
+             color = 'grey50') +
+  
   
   geom_point(aes(x = date, y = count),
              public_occupancy_data %>%
@@ -110,8 +118,6 @@ p_ICU <- ggplot(plot_data %>%
              color = "grey20",
              
              size = 0.6, stroke = 0.2) +
-  
-  geom_vline(aes(xintercept = forecast_dates$forecast_start), linetype = 'dashed') +
   
   plots_common +
   
@@ -132,4 +138,4 @@ cowplot::plot_grid(
   rel_heights = c(12, 1)
 )
 
-ggsave(paste0("results/", combined_name, "_estimates.png"), width = 10, height = 8, bg = "white")
+ggsave(paste0("results/", combined_name, "_estimates_short.png"), width = 10, height = 8, bg = "white")

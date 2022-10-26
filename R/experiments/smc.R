@@ -137,7 +137,7 @@ ggplot(results_count_quants %>% filter(group == "ward")) +
   geom_ribbon(aes(x = date, ymin = lower, ymax = upper, group = quant),
               fill = 'blue', alpha = 0.1) +
   
-  geom_point(aes(x = date, y = ward_vec), occupancy_input) +
+  #geom_point(aes(x = date, y = ward_vec), occupancy_input) +
   
   facet_wrap(~group, scales = "free_y")
 
@@ -146,6 +146,6 @@ ggplot(results_count_quants %>% filter(group == "ICU")) +
   geom_ribbon(aes(x = date, ymin = lower, ymax = upper, group = quant),
               fill = 'blue', alpha = 0.1) +
   
-  geom_point(aes(x = date, y = ICU_vec), occupancy_input) +
+  #geom_point(aes(x = date, y = ICU_vec), occupancy_input) +
   
   facet_wrap(~group, scales = "free_y")
