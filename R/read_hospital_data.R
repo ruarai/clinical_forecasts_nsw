@@ -5,6 +5,7 @@
 
 
 
+
 read_NSW_hospital_data <- function(hospital_data_path) {
   
   source("R/age_groups.R")
@@ -16,6 +17,58 @@ read_NSW_hospital_data <- function(hospital_data_path) {
            date_data = as_date(linelist_raw$load_date[1]))
 }
 
+
+read_NSW_hospital_data_ED_only <- function(hospital_data_path, ED_data_path) {
+  
+  source("R/age_groups.R")
+  
+  hosp_linelist_raw <- readxl::read_xlsx(hospital_data_path, sheet = 1)
+  
+  ED_linelist_raw <- readxl::read_xlsx(ED_data_path, sheet = 1)
+  
+  
+  covid_terms <- c(
+    "covid",
+    "respiratory",
+    "sore throat",
+    "fever",
+    "flu like",
+    "headache",
+    "chest"
+  )
+  
+  covid_regex <- regex(
+    str_c("(", str_c(covid_terms, collapse = "|"), ")", collapse = ""),
+    ignore_case = TRUE
+  )
+
+  
+  
+  ED_linelist <- ED_linelist_raw %>%
+    mutate(covidlike = str_detect(ed_presenting_problem, covid_regex))
+  
+  joint_linelist <- hosp_linelist_raw %>%
+    inner_join(
+      ED_linelist %>% 
+        filter(covidlike) %>% 
+        select(person_id,
+               visit_facility_id,
+               presentation_date_dt,
+               ed_presenting_problem,
+               ed_mode_of_separation,
+               ed_mode_of_separation_desc),
+      
+      by = c("person_id",
+             "VISIT_FACILITY_ID" = "visit_facility_id"
+      )
+    ) %>%
+    
+    drop_na(presentation_date_dt)
+  
+  read_NSW_linelist(joint_linelist, remove_adm_delay = FALSE, remove_sep_episodes = FALSE) %>%
+    mutate(age_group = assign_10yr_age_group(age),
+           date_data = as_date(hosp_linelist_raw$load_date[1]))
+}
 
 
 read_NSW_linelist <- function(
@@ -33,10 +86,7 @@ read_NSW_linelist <- function(
            true_icu_hours = icu_hours,
            days_onset_to_adm = covid_to_adm,
            ward = WARD_TYPE,
-           subward = SUB_WARD_TYPE)# %>%
-    
-    # group_by(person_id) %>%
-    # filter(first(days_onset_to_adm) > 1)
+           subward = SUB_WARD_TYPE)
     
   
   load_date <- first(clinical_linelist$load_date)

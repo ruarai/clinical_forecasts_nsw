@@ -10,11 +10,11 @@ forecast_dates <- tar_read(forecast_dates)
 public_occupancy_data <- tar_read(public_occupancy_data) %>%
   filter(date <= forecast_dates$forecast_start + ddays(4))
 
-combined_name <- "2022-10-17_scenarios"
+combined_name <- "2022-10-26_scenarios"
 forecast_names <- c(
-  "fc_2022-10-17_final_1",
-  "fc_2022-10-17_final_2",
-  "fc_2022-10-17_final_3"
+  "fc_2022-10-26_final_1",
+  "fc_2022-10-26_final_2",
+  "fc_2022-10-26_final_3"
 )
 
 forecast_labels <- c("Mid", "Low", "High") %>% `names<-`(forecast_names)
@@ -23,7 +23,7 @@ quant_files <- str_c("results/", forecast_names, "/", forecast_names, "_result_s
 
 
 quants <- map_dfr(quant_files, read_csv, show_col_types = FALSE, .id = "forecast_name") %>%
-  filter(date <= forecast_dates$forecast_start + ddays(30))
+  filter(date <= forecast_dates$forecast_start + ddays(60))
 
 plot_data <- quants %>%
   mutate(forecast_name = forecast_names[as.numeric(forecast_name)]) %>%
@@ -138,4 +138,4 @@ cowplot::plot_grid(
   rel_heights = c(12, 1)
 )
 
-ggsave(paste0("results/", combined_name, "_estimates_short.png"), width = 10, height = 8, bg = "white")
+ggsave(paste0("results/", combined_name, "_estimates.png"), width = 10, height = 8, bg = "white")

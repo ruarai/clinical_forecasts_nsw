@@ -25,6 +25,7 @@ source("R/export_results.R")
 
 source("R/read_hospital_data.R")
 source("R/get_public_occupancy.R")
+source("R/calculate_occupancy.R")
 
 source("R/plot_time_varying_morbidity.R")
 
@@ -35,7 +36,7 @@ list(
   tar_target(date_forecasting, ymd("2022-10-26")),
   
   # The output name of the forecast, used for labeling output files
-  tar_target(forecast_name, str_c("fc_", date_forecasting, "_final_3")),
+  tar_target(forecast_name, str_c("fc_", date_forecasting, "_ed_3")),
   
   tar_target(perform_fitting, TRUE),
   
@@ -43,10 +44,11 @@ list(
   tar_target(case_forecast_curve_file, "data/cases/Projections_20221026.csv"),
   tar_target(cases_path, "../email_digester/downloads/case_linelist/20221024 - Case list - Freya Shearer.zip"),
   tar_target(hospital_data_path, "../email_digester/downloads/hospital_linelist/NSW_out_episode_2022_10_25.xlsx"),
+  tar_target(ED_data_path, "../email_digester/downloads/ED_linelist/NSW_out_ED_2022_10_25.xlsx"),
   tar_target(summary_counts_path, "../email_digester/downloads/nsw_summary_counts/nsw_data_20221025.csv"),
   
   # How far into the past does the backcast begin
-  tar_target(date_simulation_start, ymd("2022-04-01")),
+  tar_target(date_simulation_start, ymd("2021-12-01")),
   
   # Load in the case forecast and format appropriately
   tar_target(
@@ -107,11 +109,11 @@ list(
     format = "fst_tbl"
   ),
   
-  
-  # Read in the APDC data (with minimal filtering, but with concatenation of episodes)
   tar_target(
     hospital_data_unfiltered,
 
+    #read_NSW_hospital_data_ED_only(hospital_data_path, ED_data_path)
+    
     read_NSW_hospital_data(hospital_data_path)
   ),
   
@@ -127,7 +129,9 @@ list(
     )
   ),
   
-  tar_target(public_occupancy_data, get_public_occupancy(summary_counts_path)),
+  #tar_target(occupancy_data, get_public_occupancy(summary_counts_path)),
+  
+  tar_target(occupancy_data, calculate_occupancy(hospital_data_unfiltered)),
   
   # Produce a joint case trajectory combining backcast and forecast
   tar_target(
@@ -161,7 +165,7 @@ list(
       time_varying_estimates,
       case_trajectory,
       clinical_parameter_samples,
-      public_occupancy_data,
+      occupancy_data,
       forecast_dates,
       do_ABC = perform_fitting
     )
@@ -170,7 +174,7 @@ list(
   # Produce the singular plot of ward and ICU occupancy
   tar_target(
     main_results_plots,
-    plot_main_results(sim_results, public_occupancy_data, forecast_dates, plot_dir, forecast_name)
+    plot_main_results(sim_results, occupancy_data, forecast_dates, plot_dir, forecast_name)
   ),
   
   # Export the quantiles of ward and ICU occupancy as used by Duleepa
