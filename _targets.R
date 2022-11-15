@@ -16,6 +16,8 @@ tar_option_set(packages = c(
 source("R/make_case_trajectory.R")
 source("R/read_nsw_cases.R")
 source("R/get_time_varying_estimates.R")
+source("R/get_constant_estimates.R")
+source("R/get_constant_estimates_lm.R")
 
 source("R/progression_model.R")
 source("R/plot_main_results.R")
@@ -29,23 +31,24 @@ source("R/calculate_occupancy.R")
 
 source("R/plot_time_varying_morbidity.R")
 
+source("R/time_varying_estimates_reversion_scenario.R")
+
 
 list(
   
   # The date the forecast is run, currently only used for naming the output
-  tar_target(date_forecasting, ymd("2022-10-26")),
+  tar_target(date_forecasting, ymd("2022-11-15")),
   
   # The output name of the forecast, used for labeling output files
-  tar_target(forecast_name, str_c("fc_", date_forecasting, "_ed_3")),
+  tar_target(forecast_name, str_c("fc_", date_forecasting, "_test_lm1")),
   
-  tar_target(perform_fitting, TRUE),
+  tar_target(perform_fitting, FALSE),
   
   # Input files for the forecast. Case forecast is via James Wood, cases_path is for NCIMS, hospital_data_path is for PFP extract
-  tar_target(case_forecast_curve_file, "data/cases/Projections_20221026.csv"),
-  tar_target(cases_path, "../email_digester/downloads/case_linelist/20221024 - Case list - Freya Shearer.zip"),
-  tar_target(hospital_data_path, "../email_digester/downloads/hospital_linelist/NSW_out_episode_2022_10_25.xlsx"),
-  tar_target(ED_data_path, "../email_digester/downloads/ED_linelist/NSW_out_ED_2022_10_25.xlsx"),
-  tar_target(summary_counts_path, "../email_digester/downloads/nsw_summary_counts/nsw_data_20221025.csv"),
+  tar_target(case_forecast_curve_file, "data/cases/Projections_20221114_4wk.csv"),
+  tar_target(cases_path, "../email_digester/downloads/case_linelist/20221114 - Case list - Freya Shearer.zip"),
+  tar_target(hospital_data_path, "../email_digester/downloads/hospital_linelist/NSW_out_episode_2022_11_15.xlsx"),
+  tar_target(ED_data_path, "../email_digester/downloads/ED_linelist/NSW_out_ED_2022_11_15.xlsx"),
   
   # How far into the past does the backcast begin
   tar_target(date_simulation_start, ymd("2021-12-01")),
@@ -55,7 +58,7 @@ list(
     case_forecast,
     read_csv(case_forecast_curve_file) %>%
       mutate(date_onset = dmy(Var1) - ddays(1), # Assume onset date is ~1 day before reporting, maybe worth revisiting
-             n = Inct_3) %>% 
+             n = Inct_1) %>% 
       drop_na(n) %>%
       select(date_onset, n)
   ), 
@@ -75,14 +78,17 @@ list(
     clinical_parameters, 
     {
       read_csv(
-        "../los_analysis_competing_risks/results/NSW_2022-05-03_omi_primary/clinical_parameters_share.csv",
+        "../los_analysis_competing_risks/results/NSW_2022-11-07_14day/omi_BA5/fits_wide_mean.csv",
         show_col_types = FALSE
-      ) %>%
-        # Can't produce onset-to-ward estimates from the NSW data as-is, so use Delta estimates (via JWalk, somehow) (7/02/2022)
-        mutate(scale_onset_to_ward = c(3.41, 3.41, 3.41, 3.41, 3.41,
-                                       3.35, 3.35, 3.24, 3.24) * 0.7,
-               shape_onset_to_ward = c(1.7, 1.7, 1.7, 1.7, 1.7,
-                                       1.7, 1.9, 1.9, 1.3) * 0.7)
+      )  %>%
+        left_join(
+          tibble(
+            age_group = c("0-9", "10-19", "20-29", "30-39", "40-49", "50-59", "60-69", "70-79", "80+"),
+            scale_onset_to_ward = c(3.41, 3.41, 3.41, 3.41, 3.41, 3.35, 3.35, 3.24, 3.24) * 0.7,
+            shape_onset_to_ward = c(1.7, 1.7, 1.7, 1.7, 1.7, 1.7, 1.9, 1.9, 1.3) * 0.7
+          ),
+          by = c("age_group")
+        )
     }
   ),
   
@@ -90,13 +96,18 @@ list(
   tar_target(
     clinical_parameter_samples, {
       read_csv(
-        "../los_analysis_competing_risks/results/NSW_2022-05-03_omi_primary/estimate_samples_share_wide.csv",
+        "../los_analysis_competing_risks/results/NSW_2022-11-07_14day/omi_BA5/fits_wide.csv",
         show_col_types = FALSE
       ) %>%
-        mutate(scale_onset_to_ward = (c(3.41, 3.41, 3.41, 3.41, 3.41,
-                                        3.35, 3.35, 3.24, 3.24) * 0.7) %>% rep(times = 1000),
-               shape_onset_to_ward = (c(1.7, 1.7, 1.7, 1.7, 1.7,
-                                        1.7, 1.9, 1.9, 1.3) * 0.7) %>% rep(times = 1000))
+        left_join(
+          tibble(
+            age_group = c("0-9", "10-19", "20-29", "30-39", "40-49", "50-59", "60-69", "70-79", "80+"),
+            scale_onset_to_ward = c(3.41, 3.41, 3.41, 3.41, 3.41, 3.35, 3.35, 3.24, 3.24) * 0.7,
+            shape_onset_to_ward = c(1.7, 1.7, 1.7, 1.7, 1.7, 1.7, 1.9, 1.9, 1.3) * 0.7
+          ),
+          by = c("age_group")
+        )
+               
       
     }
   ),
@@ -129,9 +140,8 @@ list(
     )
   ),
   
-  #tar_target(occupancy_data, get_public_occupancy(summary_counts_path)),
-  
   tar_target(occupancy_data, calculate_occupancy(hospital_data_unfiltered)),
+  tar_target(occupancy_data_aged, calculate_occupancy_aged(hospital_data_unfiltered)),
   
   # Produce a joint case trajectory combining backcast and forecast
   tar_target(
@@ -142,7 +152,9 @@ list(
   # Produce the time-varying estimates of pr_hosp, pr_ICU and pr_age_given_case with bootstrapping
   tar_target(
     time_varying_estimates,
-    get_time_varying_estimates(nsw_cases, hospital_data_unfiltered, clinical_parameters, forecast_dates)
+    #get_time_varying_estimates(nsw_cases, hospital_data_unfiltered, clinical_parameters, forecast_dates)
+    #get_constant_estimates(nsw_cases, hospital_data_unfiltered, forecast_dates)
+    get_constant_estimates_lm(nsw_cases, hospital_data_unfiltered, case_trajectory, forecast_dates)
   ),
   
   
@@ -175,6 +187,11 @@ list(
   tar_target(
     main_results_plots,
     plot_main_results(sim_results, occupancy_data, forecast_dates, plot_dir, forecast_name)
+  ),
+  
+  tar_target(
+    aged_plots,
+    plot_results_by_age(sim_results, hospital_data_unfiltered, occupancy_data_aged, forecast_dates, plot_dir)
   ),
   
   # Export the quantiles of ward and ICU occupancy as used by Duleepa

@@ -10,7 +10,7 @@ read_NSW_hospital_data <- function(hospital_data_path) {
   
   source("R/age_groups.R")
   
-  linelist_raw <- readxl::read_xlsx(hospital_data_path, sheet = 1)
+  linelist_raw <- readxl::read_xlsx(hospital_data_path, sheet = 2)
   
   read_NSW_linelist(linelist_raw, remove_adm_delay = FALSE, remove_sep_episodes = FALSE) %>%
     mutate(age_group = assign_10yr_age_group(age),
