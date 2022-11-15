@@ -8,7 +8,8 @@ plot_morbidity_trajectories <- function(
   plot_dir
 ) {
   
-  cutoff_date <- forecast_dates$hospital_data - days(morbidity_window_width / 2)
+  #cutoff_date <- forecast_dates$hospital_data - days(morbidity_window_width / 2)
+  cutoff_date <- forecast_dates$forecast_horizon
   
   plot_data_age <- morbidity_trajectories_state %>%
     filter(date >= ymd("2022-02-01")) %>%
