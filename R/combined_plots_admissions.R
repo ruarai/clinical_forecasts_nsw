@@ -69,7 +69,7 @@ p_trans <- ggplot() +
   
   geom_vline(xintercept = forecast_dates$forecast_start, linetype = "dashed") +
   coord_cartesian(xlim = c(date_plot_start, forecast_dates$forecast_start + days(60)),
-                  ylim = c(0, 250)) +
+                  ylim = c(0, 300)) +
   
   ggtitle("Daily ward admissions") +
   
@@ -99,7 +99,7 @@ p_occ <- ggplot() +
   
   geom_vline(xintercept = forecast_dates$forecast_start, linetype = "dashed") +
   coord_cartesian(xlim = c(date_plot_start, forecast_dates$forecast_start + days(60)),
-                  ylim = c(0, 1500)) +
+                  ylim = c(0, 1800)) +
   
   ggtitle("Daily ward occupancy") +
   

@@ -32,5 +32,7 @@ export_results <- function(sim_results, plot_dir, forecast_name) {
   
   fst::write_fst(sim_results$results_formatted, path = trajectories_file_out, compress = 100)
   
+  qs::qsave(sim_results, paste0(plot_dir, "/sim_results.qs"))
+  
   return(file_out)
 }
