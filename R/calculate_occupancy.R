@@ -45,7 +45,8 @@ calculate_occupancy <- function(hospital_data) {
     
     mutate(count = as.double(count))
   
-  full_occ
+  full_occ %>%
+    filter(date <= max(date) - days(1))
 }
 
 
@@ -95,6 +96,7 @@ calculate_occupancy_aged <- function(hospital_data) {
     
     mutate(count = as.double(count))
   
-  full_occ
+  full_occ %>%
+    filter(date <= max(date) - days(1))
 }
 

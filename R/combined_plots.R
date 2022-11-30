@@ -10,15 +10,14 @@ forecast_dates <- tar_read(forecast_dates)
 public_occupancy_data <- tar_read(occupancy_data) %>%
   filter(date <= forecast_dates$forecast_start + ddays(4))
 
-combined_name <- "2022-11-15_scenarios"
+combined_name <- "2022-11-28_scenarios_v2"
 forecast_names <- c(
-  "fc_2022-11-15_final_1",
-  "fc_2022-11-15_final_2",
-  "fc_2022-11-15_final_3"
+  "fc_2022-11-28_final_v2_1",
+  "fc_2022-11-28_final_v2_2"
 )
 
 
-forecast_labels <- c("Mid", "Low", "High") %>% `names<-`(forecast_names)
+forecast_labels <- c("Low", "High") %>% `names<-`(forecast_names)
 
 quant_files <- str_c("results/", forecast_names, "/", forecast_names, "_result_summaries.csv")
 

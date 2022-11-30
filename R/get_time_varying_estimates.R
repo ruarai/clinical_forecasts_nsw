@@ -84,7 +84,7 @@ get_time_varying_estimates <- function(
   
   # How wide is our running average? 1 week seems to work okay with current case numbers
   # Update 21-06-22: use 2 weeks for better long-term performance?
-  window_width <- 14
+  window_width <- 7
   
   # Define the vector of difference estimation windows
   window_starts <- 1:(length(estimation_period_days) - window_width)

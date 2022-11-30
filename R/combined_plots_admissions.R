@@ -5,14 +5,13 @@ forecast_dates <- tar_read(forecast_dates)
 hospital_data <- tar_read(hospital_data_unfiltered)
 
 
-combined_name <- "2022-11-15_scenarios"
+combined_name <- "2022-11-28_scenarios_v2"
 forecast_names <- c(
-  "fc_2022-11-15_final_1",
-  "fc_2022-11-15_final_2",
-  "fc_2022-11-15_final_3"
+  "fc_2022-11-28_final_v2_1",
+  "fc_2022-11-28_final_v2_2"
 )
 
-forecast_labels <- c("Mid", "Low", "High") %>% `names<-`(forecast_names)
+forecast_labels <- c("Low", "High") %>% `names<-`(forecast_names)
 results_files <- str_c("results/", forecast_names, "/sim_results.qs")
 
 
@@ -39,7 +38,8 @@ alpha_vals <- scales::rescale(rev(1/1.7^(1:3)), to = c(0.15, 0.99))
 plot_cols <- c(
   shades::opacity(ggokabeito::palette_okabe_ito(1), alpha_vals), 
   shades::opacity(ggokabeito::palette_okabe_ito(2), alpha_vals), 
-  shades::opacity(ggokabeito::palette_okabe_ito(3), alpha_vals)
+  shades::opacity(ggokabeito::palette_okabe_ito(3), alpha_vals), 
+  shades::opacity(ggokabeito::palette_okabe_ito(5), alpha_vals)
 )
 
 
@@ -116,7 +116,7 @@ cowplot::plot_grid(
   cowplot::get_legend(
     ggplot(plot_data_trans_quants %>% filter(quant == 50)) + 
       geom_ribbon(aes(x = date, ymin = lower, ymax = upper, fill = forecast_name)) +
-      scale_fill_manual(values = ggokabeito::palette_okabe_ito(1:3), labels = forecast_labels, name = NULL) + 
+      scale_fill_manual(values = ggokabeito::palette_okabe_ito(c(1,2,3, 5)), labels = forecast_labels, name = NULL) + 
       theme(legend.position = "bottom")
   ),
   ncol = 1,

@@ -50,10 +50,11 @@ run_progression_model <- function(
   occupancy_curve_match <- tibble(
     date = seq(forecast_dates$simulation_start, forecast_dates$forecast_horizon, by = 'days')
   ) %>%
-    mutate(
-      days_ago = as.numeric(forecast_dates$forecast_start - date),
-      do_match = days_ago < 90 & days_ago >= 0 & days_ago %% 14 == 0
-    ) %>%
+    mutate(do_match = date >= forecast_dates$forecast_start - ddays(7) & date <= forecast_dates$forecast_start) %>% 
+    # mutate(
+    #   days_ago = as.numeric(forecast_dates$forecast_start - date),
+    #   do_match = days_ago < 30 & days_ago >= 0 & days_ago %% 4 == 0
+    # ) %>%
     
     left_join(
       occupancy_data %>%
@@ -69,7 +70,7 @@ run_progression_model <- function(
            ICU_vec = replace_na(ICU_vec, -1))
   
   # Define our priors for length-of-stay and pr_hosp adjustment
-  prior_sigma_los <- if_else(do_ABC, 0.4, 0)
+  prior_sigma_los <- if_else(do_ABC, 0.6, 0)
   prior_sigma_hosp <- if_else(do_ABC, 0.1, 0)
   
   # Define our thresholds for the adaptive ABC fitting
@@ -118,14 +119,14 @@ gengamma_delay <- read_csv("~/source/los_rates/results/fit_2022_09_05_2/distribu
     n_samples = 4000,
     n_delay_samples = 512,
     
-    n_outputs = 500,
+    n_outputs = 100,
     
     n_days = n_days,
     steps_per_day = 4,
     
     do_ABC = do_ABC,
     thresholds = thresholds,
-    rejections_per_selections = if_else(do_ABC, 500, 1),
+    rejections_per_selections = if_else(do_ABC, 1000, 1),
     
     prior_sigma_los = prior_sigma_los,
     prior_sigma_hosp = prior_sigma_hosp,

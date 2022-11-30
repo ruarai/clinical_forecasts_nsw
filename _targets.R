@@ -37,18 +37,18 @@ source("R/time_varying_estimates_reversion_scenario.R")
 list(
   
   # The date the forecast is run, currently only used for naming the output
-  tar_target(date_forecasting, ymd("2022-11-15")),
+  tar_target(date_forecasting, ymd("2022-11-28")),
   
   # The output name of the forecast, used for labeling output files
-  tar_target(forecast_name, str_c("fc_", date_forecasting, "_test_lm1")),
+  tar_target(forecast_name, str_c("fc_", date_forecasting, "_final_v2_3")),
   
-  tar_target(perform_fitting, FALSE),
+  tar_target(perform_fitting, TRUE),
   
   # Input files for the forecast. Case forecast is via James Wood, cases_path is for NCIMS, hospital_data_path is for PFP extract
-  tar_target(case_forecast_curve_file, "data/cases/Projections_20221114_4wk.csv"),
-  tar_target(cases_path, "../email_digester/downloads/case_linelist/20221114 - Case list - Freya Shearer.zip"),
-  tar_target(hospital_data_path, "../email_digester/downloads/hospital_linelist/NSW_out_episode_2022_11_15.xlsx"),
-  tar_target(ED_data_path, "../email_digester/downloads/ED_linelist/NSW_out_ED_2022_11_15.xlsx"),
+  tar_target(case_forecast_curve_file, "data/cases/Projections_20221128v2.csv"),
+  tar_target(cases_path, "../email_digester/downloads/case_linelist/20221128 - Case list - Freya Shearer.zip"),
+  tar_target(hospital_data_path, "../email_digester/downloads/hospital_linelist/NSW_out_episode_2022_11_29.xlsx"),
+  tar_target(ED_data_path, "../email_digester/downloads/ED_linelist/NSW_out_ED_2022_11_29.xlsx"),
   
   # How far into the past does the backcast begin
   tar_target(date_simulation_start, ymd("2021-12-01")),
@@ -58,7 +58,7 @@ list(
     case_forecast,
     read_csv(case_forecast_curve_file) %>%
       mutate(date_onset = dmy(Var1) - ddays(1), # Assume onset date is ~1 day before reporting, maybe worth revisiting
-             n = Inct_1) %>% 
+             n = Inct_3) %>% 
       drop_na(n) %>%
       select(date_onset, n)
   ), 
@@ -149,12 +149,16 @@ list(
     make_case_trajectory(nsw_cases, case_forecast, forecast_dates, plot_dir)
   ),
   
-  # Produce the time-varying estimates of pr_hosp, pr_ICU and pr_age_given_case with bootstrapping
+  #Produce the time-varying estimates of pr_hosp, pr_ICU and pr_age_given_case with bootstrapping
+  tar_target(
+    time_varying_estimates_moving,
+    get_time_varying_estimates(nsw_cases, hospital_data_unfiltered, clinical_parameters, forecast_dates)
+  ),
   tar_target(
     time_varying_estimates,
-    #get_time_varying_estimates(nsw_cases, hospital_data_unfiltered, clinical_parameters, forecast_dates)
+    get_time_varying_estimates(nsw_cases, hospital_data_unfiltered, clinical_parameters, forecast_dates)
     #get_constant_estimates(nsw_cases, hospital_data_unfiltered, forecast_dates)
-    get_constant_estimates_lm(nsw_cases, hospital_data_unfiltered, case_trajectory, forecast_dates)
+    #get_constant_estimates_lm(nsw_cases, hospital_data_unfiltered, case_trajectory, time_varying_estimates_moving, forecast_dates)
   ),
   
   
