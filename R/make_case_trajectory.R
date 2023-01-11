@@ -11,12 +11,16 @@ make_case_trajectory <- function(
     count(date_onset = CALCULATED_ONSET_DATE, name = "count") %>%
     complete(date_onset = seq(forecast_dates$simulation_start, forecast_dates$forecast_start - ddays(1), by = "days"), fill = list(count = 0)) %>%
     filter(date_onset >= forecast_dates$simulation_start,
-           date_onset < forecast_dates$forecast_start)
+           date_onset < forecast_dates$forecast_start) %>%
+    
+    mutate(count = zoo::rollmean(count, 5, fill = "extend", align = "c")) 
+  
+  nsw_cases_count$count[(nrow(nsw_cases_count) - 2):nrow(nsw_cases_count)] <- NA_real_
   
   # Combined the count into the backcast with that of the forecast
   case_trajectory_unimputed <- bind_rows(
     case_forecast %>% 
-      filter(date_onset > max(nsw_cases_count$date_onset)) %>%
+      filter(date_onset > max(nsw_cases_count$date_onset, na.rm = TRUE)) %>%
       select(date_onset, count = n), 
     
     nsw_cases_count

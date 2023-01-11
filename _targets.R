@@ -37,31 +37,39 @@ source("R/time_varying_estimates_reversion_scenario.R")
 list(
   
   # The date the forecast is run, currently only used for naming the output
-  tar_target(date_forecasting, ymd("2022-11-28")),
+  tar_target(date_forecasting, ymd("2023-01-11")),
   
   # The output name of the forecast, used for labeling output files
-  tar_target(forecast_name, str_c("fc_", date_forecasting, "_final_v2_3")),
+  tar_target(forecast_name, str_c("fc_", date_forecasting, "_base")),
   
   tar_target(perform_fitting, TRUE),
   
   # Input files for the forecast. Case forecast is via James Wood, cases_path is for NCIMS, hospital_data_path is for PFP extract
-  tar_target(case_forecast_curve_file, "data/cases/Projections_20221128v2.csv"),
-  tar_target(cases_path, "../email_digester/downloads/case_linelist/20221128 - Case list - Freya Shearer.zip"),
-  tar_target(hospital_data_path, "../email_digester/downloads/hospital_linelist/NSW_out_episode_2022_11_29.xlsx"),
-  tar_target(ED_data_path, "../email_digester/downloads/ED_linelist/NSW_out_ED_2022_11_29.xlsx"),
+  tar_target(case_forecast_curve_file, "data/cases/Projections_20230111.csv"),
+  tar_target(cases_path, "../email_digester/downloads/case_linelist/20230109 - Case list - Freya Shearer.zip"),
+  tar_target(hospital_data_path, "../email_digester/downloads/hospital_linelist/NSW_out_episode_2023_01_10.xlsx"),
+  tar_target(ED_data_path, "../email_digester/downloads/ED_linelist/NSW_out_ED_2023_01_10.xlsx"),
   
   # How far into the past does the backcast begin
-  tar_target(date_simulation_start, ymd("2021-12-01")),
+  tar_target(date_simulation_start, ymd("2022-06-01")),
   
   # Load in the case forecast and format appropriately
   tar_target(
     case_forecast,
     read_csv(case_forecast_curve_file) %>%
       mutate(date_onset = dmy(Var1) - ddays(1), # Assume onset date is ~1 day before reporting, maybe worth revisiting
-             n = Inct_3) %>% 
+             n = Inct_1) %>%
       drop_na(n) %>%
       select(date_onset, n)
-  ), 
+  ),
+  # tar_target(
+  #   case_forecast,
+  #   readxl::read_xlsx(case_forecast_curve_file) %>%
+  #     mutate(date_onset = as_date(Var1) - ddays(1), # Assume onset date is ~1 day before reporting, maybe worth revisiting
+  #            n = Wane) %>% 
+  #     drop_na(n) %>%
+  #     select(date_onset, n)
+  # ), 
   
   # Where the output plots (and anything else) will go
   tar_target(
@@ -84,8 +92,8 @@ list(
         left_join(
           tibble(
             age_group = c("0-9", "10-19", "20-29", "30-39", "40-49", "50-59", "60-69", "70-79", "80+"),
-            scale_onset_to_ward = c(3.41, 3.41, 3.41, 3.41, 3.41, 3.35, 3.35, 3.24, 3.24) * 0.7,
-            shape_onset_to_ward = c(1.7, 1.7, 1.7, 1.7, 1.7, 1.7, 1.9, 1.9, 1.3) * 0.7
+            scale_onset_to_ward = c(3.41, 3.41, 3.41, 3.41, 3.41, 3.35, 3.35, 3.24, 3.24) * 0.2,
+            shape_onset_to_ward = c(1.7, 1.7, 1.7, 1.7, 1.7, 1.7, 1.9, 1.9, 1.3) * 0.2
           ),
           by = c("age_group")
         )
@@ -102,11 +110,14 @@ list(
         left_join(
           tibble(
             age_group = c("0-9", "10-19", "20-29", "30-39", "40-49", "50-59", "60-69", "70-79", "80+"),
-            scale_onset_to_ward = c(3.41, 3.41, 3.41, 3.41, 3.41, 3.35, 3.35, 3.24, 3.24) * 0.7,
-            shape_onset_to_ward = c(1.7, 1.7, 1.7, 1.7, 1.7, 1.7, 1.9, 1.9, 1.3) * 0.7
+            scale_onset_to_ward = c(3.41, 3.41, 3.41, 3.41, 3.41, 3.35, 3.35, 3.24, 3.24) * 0.2,
+            shape_onset_to_ward = c(1.7, 1.7, 1.7, 1.7, 1.7, 1.7, 1.9, 1.9, 1.3) * 0.2,
           ),
           by = c("age_group")
-        )
+        ) %>%
+        mutate(scale_ward_to_discharge = scale_ward_to_discharge * 1.3,
+               scale_ICU_to_discharge = scale_ICU_to_discharge * 0.7
+               )
                
       
     }
